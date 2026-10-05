@@ -107,7 +107,7 @@ class Features
 
     public function bootPublishables(): static
     {
-        if ($this->publishables !== []) {
+        if (! empty($this->publishables)) {
             $this->publish(array_map($this->publicPath(...), $this->publishables));
         }
 
@@ -120,7 +120,7 @@ class Features
      */
     public function bootPublishAfterInstall(): static
     {
-        if ([...$this->publishables, ...$this->scripts, ...$this->stylesheets] !== []) {
+        if (! empty([...$this->publishables, ...$this->scripts, ...$this->stylesheets])) {
             Statamic::afterInstalled($this->publishAssets(...));
         }
 
