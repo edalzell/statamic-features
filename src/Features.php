@@ -6,6 +6,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use ReflectionClass;
+use ReflectionMethod;
 use Statamic\Actions\Action;
 use Statamic\Addons\Addon;
 use Statamic\Dictionaries\Dictionary;
@@ -15,6 +16,7 @@ use Statamic\Facades\Fieldset;
 use Statamic\Fields\Fieldtype;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
+use Statamic\Statamic;
 use Statamic\Tags\Tags;
 use Statamic\UpdateScripts\UpdateScript;
 use Statamic\Widgets\Widget;
@@ -42,9 +44,15 @@ class Features
 
     private string $path;
 
+    /** @var array<int, string> */
+    private array $scripts = [];
+
     private string $slug;
 
-    public function __construct(ServiceProvider $provider)
+    /** @var array<int, string> */
+    private array $stylesheets = [];
+
+    public function __construct(private readonly ServiceProvider $provider)
     {
         $reflection = new ReflectionClass($provider);
 
@@ -77,6 +85,8 @@ class Features
             ->bootBlueprints()
             ->bootExtensions()
             ->bootFieldsets()
+            ->bootScripts()
+            ->bootStylesheets()
             ->bootUpdateScripts();
     }
 
@@ -85,6 +95,22 @@ class Features
         if (File::isDirectory($path = "{$this->path}/resources/fieldsets")) {
             Fieldset::addNamespace($this->slug, $path);
         }
+
+        return $this;
+    }
+
+    public function bootScripts(): static
+    {
+        collect($this->scripts)
+            ->each(fn (string $path) => Statamic::script($this->slug, $this->publishAsset($path, 'js')));
+
+        return $this;
+    }
+
+    public function bootStylesheets(): static
+    {
+        collect($this->stylesheets)
+            ->each(fn (string $path) => Statamic::style($this->slug, $this->publishAsset($path, 'css')));
 
         return $this;
     }
@@ -113,9 +139,25 @@ class Features
         return $this;
     }
 
+    /** @param  array<int, string>  $scripts */
+    public function scripts(array $scripts): static
+    {
+        $this->scripts = $scripts;
+
+        return $this;
+    }
+
     public function slug(string $slug): static
     {
         $this->slug = $slug;
+
+        return $this;
+    }
+
+    /** @param  array<int, string>  $stylesheets */
+    public function stylesheets(array $stylesheets): static
+    {
+        $this->stylesheets = $stylesheets;
 
         return $this;
     }
@@ -155,5 +197,22 @@ class Features
     private function isConcrete(string $class, string $type): bool
     {
         return is_subclass_of($class, $type) && ! (new ReflectionClass($class))->isAbstract();
+    }
+
+    /** @param  array<string, string>  $paths */
+    private function publish(array $paths): void
+    {
+        (new ReflectionMethod($this->provider, 'publishes'))->invoke($this->provider, $paths, $this->slug);
+    }
+
+    /**
+     * Versioned by the file's contents rather than a package version, which a
+     * feature in a site doesn't have.
+     */
+    private function publishAsset(string $path, string $folder): string
+    {
+        $this->publish([$path => public_path("vendor/{$this->slug}/{$folder}/".basename($path))]);
+
+        return basename($path).'?v='.md5_file($path);
     }
 }

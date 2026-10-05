@@ -11,6 +11,12 @@ use Statamic\Statamic;
 
 abstract class FeatureServiceProvider extends BaseProvider
 {
+    /** @var array<int, string> */
+    protected array $scripts = [];
+
+    /** @var array<int, string> */
+    protected array $stylesheets = [];
+
     private Features $statamic;
 
     public function __construct(Application $app)
@@ -19,7 +25,9 @@ abstract class FeatureServiceProvider extends BaseProvider
 
         $this->statamic = (new Features($this))
             ->path($this->featuresPath())
-            ->slug($this->slug());
+            ->scripts($this->scripts)
+            ->slug($this->slug())
+            ->stylesheets($this->stylesheets);
     }
 
     public function boot(): void

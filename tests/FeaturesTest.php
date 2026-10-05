@@ -1,6 +1,8 @@
 <?php
 
 use Edalzell\StatamicFeatures\Tests\Fixtures\Addon\Features\Owned\UpdateScripts\OwnedScript;
+use Edalzell\StatamicFeatures\Tests\Fixtures\Bare;
+use Edalzell\StatamicFeatures\Tests\Fixtures\Sample;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Actions\SampleAction;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Dictionaries\SampleDictionary;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Fieldtypes\SampleFieldtype;
@@ -12,6 +14,7 @@ use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\NotATag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\SampleTag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\UpdateScripts\SampleScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Widgets\SampleWidget;
+use Illuminate\Support\ServiceProvider;
 use Statamic\Actions\Action;
 use Statamic\Dictionaries\Dictionary;
 use Statamic\Facades\Blueprint;
@@ -19,8 +22,14 @@ use Statamic\Facades\Fieldset;
 use Statamic\Fields\Fieldtype;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
+use Statamic\Statamic;
 use Statamic\Tags\Tags;
 use Statamic\Widgets\Widget;
+
+function samplePath(string $path): string
+{
+    return __DIR__.'/__fixtures__/Sample/'.$path;
+}
 
 function extensions(string $type): array
 {
@@ -61,4 +70,26 @@ it('registers update scripts against the addon that owns the feature', function 
 
 it('wont register update scripts for a feature no addon owns', function () {
     expect(app('statamic.update-scripts')->pluck('class'))->not->toContain(SampleScript::class);
+});
+
+it('registers and publishes a feature\'s scripts under its slug', function () {
+    $script = samplePath('src/../resources/js/cp.js');
+
+    expect(Statamic::availableScripts(request())['sample'])->toContain('cp.js?v='.md5_file($script))
+        ->and(ServiceProvider::pathsToPublish(Sample\ServiceProvider::class, 'sample'))
+        ->toHaveKey($script, public_path('vendor/sample/js/cp.js'));
+});
+
+it('registers and publishes a feature\'s stylesheets under its slug', function () {
+    $stylesheet = samplePath('src/../resources/css/cp.css');
+
+    expect(Statamic::availableStyles(request())['sample'])->toContain('cp.css?v='.md5_file($stylesheet))
+        ->and(ServiceProvider::pathsToPublish(Sample\ServiceProvider::class, 'sample'))
+        ->toHaveKey($stylesheet, public_path('vendor/sample/css/cp.css'));
+});
+
+it('registers no assets for a feature that has none', function () {
+    expect(Statamic::availableScripts(request()))->not->toHaveKey('bare')
+        ->and(Statamic::availableStyles(request()))->not->toHaveKey('bare')
+        ->and(ServiceProvider::pathsToPublish(Bare\ServiceProvider::class))->toBe([]);
 });
