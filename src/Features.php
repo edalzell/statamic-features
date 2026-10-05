@@ -7,13 +7,16 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use ReflectionClass;
 use Statamic\Actions\Action;
+use Statamic\Addons\Addon;
 use Statamic\Dictionaries\Dictionary;
+use Statamic\Facades\Addon as Addons;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Fieldset;
 use Statamic\Fields\Fieldtype;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
 use Statamic\Tags\Tags;
+use Statamic\UpdateScripts\UpdateScript;
 use Statamic\Widgets\Widget;
 use Symfony\Component\Finder\SplFileInfo;
 
@@ -73,7 +76,8 @@ class Features
         $this
             ->bootBlueprints()
             ->bootExtensions()
-            ->bootFieldsets();
+            ->bootFieldsets()
+            ->bootUpdateScripts();
     }
 
     public function bootFieldsets(): static
@@ -81,6 +85,23 @@ class Features
         if (File::isDirectory($path = "{$this->path}/resources/fieldsets")) {
             Fieldset::addNamespace($this->slug, $path);
         }
+
+        return $this;
+    }
+
+    /**
+     * An update script runs when a composer package changes version, so only a
+     * feature inside an addon has anything to run against.
+     */
+    public function bootUpdateScripts(): static
+    {
+        if (is_null($addon = $this->addon())) {
+            return $this;
+        }
+
+        $this
+            ->classesIn('UpdateScripts', UpdateScript::class)
+            ->each(fn (string $script) => $script::register($addon->package()));
 
         return $this;
     }
@@ -97,6 +118,12 @@ class Features
         $this->slug = $slug;
 
         return $this;
+    }
+
+    private function addon(): ?Addon
+    {
+        return Addons::all()
+            ->first(fn (Addon $addon) => str_starts_with($this->namespace, $addon->namespace().'\\'));
     }
 
     /**

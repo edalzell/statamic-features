@@ -1,5 +1,6 @@
 <?php
 
+use Edalzell\StatamicFeatures\Tests\Fixtures\Addon\Features\Owned\UpdateScripts\OwnedScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Actions\SampleAction;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Dictionaries\SampleDictionary;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Fieldtypes\SampleFieldtype;
@@ -9,6 +10,7 @@ use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Scopes\SampleScope;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\AbstractTag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\NotATag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\SampleTag;
+use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\UpdateScripts\SampleScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Widgets\SampleWidget;
 use Statamic\Actions\Action;
 use Statamic\Dictionaries\Dictionary;
@@ -50,4 +52,13 @@ it('registers a feature\'s blueprints under its slug', function () {
 
 it('registers a feature\'s fieldsets under its slug', function () {
     expect(Fieldset::find('sample::common'))->not->toBeNull();
+});
+
+it('registers update scripts against the addon that owns the feature', function () {
+    expect(app('statamic.update-scripts')->all())
+        ->toContain(['class' => OwnedScript::class, 'package' => 'edalzell/fixture-addon']);
+});
+
+it('wont register update scripts for a feature no addon owns', function () {
+    expect(app('statamic.update-scripts')->pluck('class'))->not->toContain(SampleScript::class);
 });
