@@ -32,6 +32,7 @@ class TestCase extends Orchestra
     {
         $app['config']->set('statamic.users.repository', 'file');
         $app['config']->set('statamic.stache.watcher', false);
+        $app['config']->set('statamic.routes.middleware', ['web', 'statamic-routes']);
 
         $app->make(Manifest::class)->manifest = [
             'edalzell/fixture-addon' => [
