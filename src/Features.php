@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use ReflectionClass;
 use Statamic\Actions\Action;
 use Statamic\Dictionaries\Dictionary;
+use Statamic\Facades\Blueprint;
 use Statamic\Fields\Fieldtype;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
@@ -37,12 +38,24 @@ class Features
 
     private string $path;
 
+    private string $slug;
+
     public function __construct(ServiceProvider $provider)
     {
         $reflection = new ReflectionClass($provider);
 
         $this->namespace = $reflection->getNamespaceName();
         $this->path = dirname($reflection->getFileName(), 2);
+        $this->slug = str(basename($this->path))->kebab()->toString();
+    }
+
+    public function bootBlueprints(): static
+    {
+        if (File::isDirectory($path = "{$this->path}/resources/blueprints")) {
+            Blueprint::addNamespace($this->slug, $path);
+        }
+
+        return $this;
     }
 
     public function bootExtensions(): static
@@ -56,12 +69,21 @@ class Features
 
     public function bootFeature(): void
     {
-        $this->bootExtensions();
+        $this
+            ->bootBlueprints()
+            ->bootExtensions();
     }
 
     public function path(string $path): static
     {
         $this->path = $path;
+
+        return $this;
+    }
+
+    public function slug(string $slug): static
+    {
+        $this->slug = $slug;
 
         return $this;
     }

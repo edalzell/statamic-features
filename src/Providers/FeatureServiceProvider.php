@@ -15,7 +15,9 @@ abstract class FeatureServiceProvider extends BaseProvider
     {
         parent::__construct($app);
 
-        $this->statamic = (new Features($this))->path($this->featuresPath());
+        $this->statamic = (new Features($this))
+            ->path($this->featuresPath())
+            ->slug($this->slug());
     }
 
     public function boot(): void

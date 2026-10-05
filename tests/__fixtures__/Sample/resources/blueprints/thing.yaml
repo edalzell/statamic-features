@@ -1,0 +1,6 @@
+title: Thing
+fields:
+  -
+    handle: title
+    field:
+      type: text

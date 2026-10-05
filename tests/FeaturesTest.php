@@ -12,6 +12,7 @@ use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\SampleTag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Widgets\SampleWidget;
 use Statamic\Actions\Action;
 use Statamic\Dictionaries\Dictionary;
+use Statamic\Facades\Blueprint;
 use Statamic\Fields\Fieldtype;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
@@ -40,4 +41,8 @@ it('wont register abstract extensions or classes of another type', function () {
     expect(extensions(Tags::class))
         ->not->toContain(AbstractTag::class)
         ->not->toContain(NotATag::class);
+});
+
+it('registers a feature\'s blueprints under its slug', function () {
+    expect(Blueprint::find('sample::thing'))->not->toBeNull();
 });
