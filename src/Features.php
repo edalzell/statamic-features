@@ -2,6 +2,7 @@
 
 namespace Edalzell\StatamicFeatures;
 
+use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
@@ -89,6 +90,7 @@ class Features
             ->bootExtensions()
             ->bootFieldsets()
             ->bootPublishables()
+            ->bootPublishAfterInstall()
             ->bootScripts()
             ->bootStylesheets()
             ->bootUpdateScripts();
@@ -107,6 +109,19 @@ class Features
     {
         if ($this->publishables !== []) {
             $this->publish(array_map($this->publicPath(...), $this->publishables));
+        }
+
+        return $this;
+    }
+
+    /**
+     * `statamic:install` publishes an addon's assets by the addon's tag; a
+     * feature's are tagged with its own slug, so it has to ask for them itself.
+     */
+    public function bootPublishAfterInstall(): static
+    {
+        if ([...$this->publishables, ...$this->scripts, ...$this->stylesheets] !== []) {
+            Statamic::afterInstalled($this->publishAssets(...));
         }
 
         return $this;
@@ -240,5 +255,10 @@ class Features
         $this->publish([$path => $this->publicPath("{$folder}/".basename($path))]);
 
         return basename($path).'?v='.md5_file($path);
+    }
+
+    private function publishAssets(Command $command): void
+    {
+        $command->call('vendor:publish', ['--force' => true, '--tag' => $this->slug]);
     }
 }

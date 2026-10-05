@@ -14,6 +14,7 @@ use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\NotATag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\SampleTag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\UpdateScripts\SampleScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Widgets\SampleWidget;
+use Illuminate\Console\Command;
 use Illuminate\Support\ServiceProvider;
 use Statamic\Actions\Action;
 use Statamic\Dictionaries\Dictionary;
@@ -97,4 +98,12 @@ it('registers no assets for a feature that has none', function () {
 it('publishes a feature\'s publishables under its slug', function () {
     expect(ServiceProvider::pathsToPublish(Sample\ServiceProvider::class, 'sample'))
         ->toHaveKey(samplePath('src/../resources/img'), public_path('vendor/sample/img'));
+});
+
+it('publishes a feature\'s assets after Statamic is installed', function () {
+    $command = mock(Command::class);
+    $command->shouldReceive('call')->atLeast()->once()->with('vendor:publish', ['--force' => true, '--tag' => 'sample']);
+    $command->shouldReceive('call')->never()->with('vendor:publish', ['--force' => true, '--tag' => 'bare']);
+
+    Statamic::runAfterInstalledCallbacks($command);
 });
