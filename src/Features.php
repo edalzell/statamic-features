@@ -9,6 +9,7 @@ use ReflectionClass;
 use Statamic\Actions\Action;
 use Statamic\Dictionaries\Dictionary;
 use Statamic\Facades\Blueprint;
+use Statamic\Facades\Fieldset;
 use Statamic\Fields\Fieldtype;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
@@ -71,7 +72,17 @@ class Features
     {
         $this
             ->bootBlueprints()
-            ->bootExtensions();
+            ->bootExtensions()
+            ->bootFieldsets();
+    }
+
+    public function bootFieldsets(): static
+    {
+        if (File::isDirectory($path = "{$this->path}/resources/fieldsets")) {
+            Fieldset::addNamespace($this->slug, $path);
+        }
+
+        return $this;
     }
 
     public function path(string $path): static

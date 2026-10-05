@@ -13,6 +13,7 @@ use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Widgets\SampleWidget;
 use Statamic\Actions\Action;
 use Statamic\Dictionaries\Dictionary;
 use Statamic\Facades\Blueprint;
+use Statamic\Facades\Fieldset;
 use Statamic\Fields\Fieldtype;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
@@ -45,4 +46,8 @@ it('wont register abstract extensions or classes of another type', function () {
 
 it('registers a feature\'s blueprints under its slug', function () {
     expect(Blueprint::find('sample::thing'))->not->toBeNull();
+});
+
+it('registers a feature\'s fieldsets under its slug', function () {
+    expect(Fieldset::find('sample::common'))->not->toBeNull();
 });
