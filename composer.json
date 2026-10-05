@@ -1,0 +1,64 @@
+{
+    "name": "edalzell/statamic-features",
+    "description": "Self-contained feature modules for Statamic, built on edalzell/laravel-features",
+    "license": "MIT",
+    "keywords": [
+        "Erin Dalzell",
+        "statamic",
+        "laravel-features"
+    ],
+    "authors": [
+        {
+            "name": "Erin Dalzell",
+            "email": "erin@silentz.co",
+            "role": "Developer"
+        }
+    ],
+    "homepage": "https://github.com/edalzell/statamic-features",
+    "require": {
+        "php": "^8.3",
+        "edalzell/laravel-features": "dev-feature/closure-route-groups as 1.1.0",
+        "statamic/cms": "^6.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.14",
+        "orchestra/testbench": "^10.8 || ^11.0",
+        "pestphp/pest": "^4.7",
+        "pestphp/pest-plugin-laravel": "^4.0"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/edalzell/laravel-features"
+        }
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Edalzell\\StatamicFeatures\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Edalzell\\StatamicFeatures\\Tests\\": "tests/",
+            "Edalzell\\StatamicFeatures\\Tests\\Fixtures\\Addon\\Features\\Owned\\": "tests/__fixtures__/Addon/features/Owned/src",
+            "Edalzell\\StatamicFeatures\\Tests\\Fixtures\\Bare\\": "tests/__fixtures__/Bare/src",
+            "Edalzell\\StatamicFeatures\\Tests\\Fixtures\\Sample\\": "tests/__fixtures__/Sample/src"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "edalzell/laravel-features-plugin": true,
+            "pestphp/pest-plugin": true,
+            "pixelfear/composer-dist-plugin": true
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "analyse": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint",
+        "test": "vendor/bin/pest"
+    }
+}
