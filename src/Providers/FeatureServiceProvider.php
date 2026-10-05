@@ -11,6 +11,9 @@ use Statamic\Statamic;
 
 abstract class FeatureServiceProvider extends BaseProvider
 {
+    /** @var array<string, string> */
+    protected array $publishables = [];
+
     /** @var array<int, string> */
     protected array $scripts = [];
 
@@ -25,6 +28,7 @@ abstract class FeatureServiceProvider extends BaseProvider
 
         $this->statamic = (new Features($this))
             ->path($this->featuresPath())
+            ->publishables($this->publishables)
             ->scripts($this->scripts)
             ->slug($this->slug())
             ->stylesheets($this->stylesheets);

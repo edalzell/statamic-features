@@ -44,6 +44,9 @@ class Features
 
     private string $path;
 
+    /** @var array<string, string> */
+    private array $publishables = [];
+
     /** @var array<int, string> */
     private array $scripts = [];
 
@@ -85,6 +88,7 @@ class Features
             ->bootBlueprints()
             ->bootExtensions()
             ->bootFieldsets()
+            ->bootPublishables()
             ->bootScripts()
             ->bootStylesheets()
             ->bootUpdateScripts();
@@ -94,6 +98,15 @@ class Features
     {
         if (File::isDirectory($path = "{$this->path}/resources/fieldsets")) {
             Fieldset::addNamespace($this->slug, $path);
+        }
+
+        return $this;
+    }
+
+    public function bootPublishables(): static
+    {
+        if ($this->publishables !== []) {
+            $this->publish(array_map($this->publicPath(...), $this->publishables));
         }
 
         return $this;
@@ -135,6 +148,14 @@ class Features
     public function path(string $path): static
     {
         $this->path = $path;
+
+        return $this;
+    }
+
+    /** @param  array<string, string>  $publishables */
+    public function publishables(array $publishables): static
+    {
+        $this->publishables = $publishables;
 
         return $this;
     }
@@ -199,6 +220,11 @@ class Features
         return is_subclass_of($class, $type) && ! (new ReflectionClass($class))->isAbstract();
     }
 
+    private function publicPath(string $path): string
+    {
+        return public_path("vendor/{$this->slug}/{$path}");
+    }
+
     /** @param  array<string, string>  $paths */
     private function publish(array $paths): void
     {
@@ -211,7 +237,7 @@ class Features
      */
     private function publishAsset(string $path, string $folder): string
     {
-        $this->publish([$path => public_path("vendor/{$this->slug}/{$folder}/".basename($path))]);
+        $this->publish([$path => $this->publicPath("{$folder}/".basename($path))]);
 
         return basename($path).'?v='.md5_file($path);
     }

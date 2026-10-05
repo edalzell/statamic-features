@@ -93,3 +93,8 @@ it('registers no assets for a feature that has none', function () {
         ->and(Statamic::availableStyles(request()))->not->toHaveKey('bare')
         ->and(ServiceProvider::pathsToPublish(Bare\ServiceProvider::class))->toBe([]);
 });
+
+it('publishes a feature\'s publishables under its slug', function () {
+    expect(ServiceProvider::pathsToPublish(Sample\ServiceProvider::class, 'sample'))
+        ->toHaveKey(samplePath('src/../resources/img'), public_path('vendor/sample/img'));
+});
