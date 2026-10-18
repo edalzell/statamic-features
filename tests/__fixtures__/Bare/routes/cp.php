@@ -1,5 +1,6 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use Illuminate\Routing\Router;
 
-Route::get('bare-cp', fn () => 'ok')->name('bare.cp');
+/** @var Router $router */
+$router->get('bare-cp', fn () => 'ok')->name('bare.cp');
