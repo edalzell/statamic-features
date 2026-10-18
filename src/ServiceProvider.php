@@ -36,7 +36,7 @@ class ServiceProvider extends LaravelServiceProvider
         $defaults = $this->featuresDefaults()['route_groups'];
 
         $ours = collect(self::ROUTE_GROUPS)
-            ->filter(fn (string $loader, string $file) => ($groups[$file] ?? null) === ($defaults[$file] ?? null));
+            ->filter(fn (string $loader, string $file) => ! array_key_exists($file, $groups) || $groups[$file] === ($defaults[$file] ?? null));
 
         config()->set('features.route_groups', [...$groups, ...$ours->all()]);
     }

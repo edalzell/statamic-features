@@ -146,7 +146,7 @@ class Extensions implements Extension
 
     private function bootBlueprints(Features $features): static
     {
-        if (File::isDirectory($path = $features->disk()->path('resources/blueprints'))) {
+        if (File::isDirectory($path = $features->pathTo('resources/blueprints'))) {
             Blueprint::addNamespace($features->slug(), $path);
         }
 
@@ -164,7 +164,7 @@ class Extensions implements Extension
 
     private function bootFieldsets(Features $features): static
     {
-        if (File::isDirectory($path = $features->disk()->path('resources/fieldsets'))) {
+        if (File::isDirectory($path = $features->pathTo('resources/fieldsets'))) {
             Fieldset::addNamespace($features->slug(), $path);
         }
 
@@ -184,7 +184,7 @@ class Extensions implements Extension
      */
     private function bootUpdateScripts(Features $features): static
     {
-        if (! File::isDirectory($features->disk()->path('src/UpdateScripts'))) {
+        if (! File::isDirectory($features->pathTo('src/UpdateScripts'))) {
             return $this;
         }
 
@@ -208,7 +208,7 @@ class Extensions implements Extension
      */
     private function classesIn(Features $features, string $folder, ?string $type = null): Collection
     {
-        if (! File::isDirectory($path = $features->disk()->path("src/{$folder}"))) {
+        if (! File::isDirectory($path = $features->pathTo("src/{$folder}"))) {
             return collect();
         }
 
@@ -235,7 +235,7 @@ class Extensions implements Extension
     /** @return Collection<int, string> */
     private function cpDirectories(Features $features): Collection
     {
-        if (! File::isDirectory($path = $features->disk()->path('resources/cp'))) {
+        if (! File::isDirectory($path = $features->pathTo('resources/cp'))) {
             return collect();
         }
 
@@ -316,11 +316,11 @@ class Extensions implements Extension
         $slug = $features->slug();
 
         $this->publish($features, [
-            $features->disk()->path("{$publicDirectory}/{$buildDirectory}").'/' => public_path("vendor/{$slug}/{$buildDirectory}/"),
+            $features->pathTo("{$publicDirectory}/{$buildDirectory}").'/' => public_path("vendor/{$slug}/{$buildDirectory}/"),
         ]);
 
         Statamic::vite($slug, [
-            'hotFile' => $config['hotFile'] ?? $features->disk()->path("{$publicDirectory}/hot"),
+            'hotFile' => $config['hotFile'] ?? $features->pathTo("{$publicDirectory}/hot"),
             'buildDirectory' => "vendor/{$slug}/{$buildDirectory}",
             'input' => $config['input'],
         ]);
@@ -329,12 +329,12 @@ class Extensions implements Extension
     /** @return array<int, string> */
     private function scripts(Features $features): array
     {
-        return $features->option('statamic.scripts') ?? File::glob($features->disk()->path('resources/cp/js/*.js'));
+        return $features->option('statamic.scripts') ?? File::glob($features->pathTo('resources/cp/js/*.js'));
     }
 
     /** @return array<int, string> */
     private function stylesheets(Features $features): array
     {
-        return $features->option('statamic.stylesheets') ?? File::glob($features->disk()->path('resources/cp/css/*.css'));
+        return $features->option('statamic.stylesheets') ?? File::glob($features->pathTo('resources/cp/css/*.css'));
     }
 }
