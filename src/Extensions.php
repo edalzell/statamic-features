@@ -5,12 +5,16 @@ namespace Edalzell\StatamicFeatures;
 use Edalzell\Features\Contracts\Extension;
 use Edalzell\Features\Features;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use ReflectionClass;
 use ReflectionMethod;
+use RuntimeException;
 use Statamic\Actions\Action;
 use Statamic\Addons\Addon;
+use Statamic\Addons\Manifest;
 use Statamic\Dictionaries\Dictionary;
 use Statamic\Facades\Addon as Addons;
 use Statamic\Facades\Blueprint;
@@ -43,10 +47,14 @@ class Extensions implements Extension
         'Fieldtypes' => Fieldtype::class,
         'Modifiers' => Modifier::class,
         'Query/Scopes' => Scope::class,
+        'Query/Scopes/Filters' => Scope::class,
         'Scopes' => Scope::class,
         'Tags' => Tags::class,
         'Widgets' => Widget::class,
     ];
+
+    /** @var array<string, string> slug => root path */
+    private array $booted = [];
 
     /**
      * Deferred until every provider has booted, Statamic's included. Not
@@ -58,7 +66,85 @@ class Extensions implements Extension
         $features->app()->booted(fn () => $this->bootFeature($features));
     }
 
-    public function bootBlueprints(Features $features): static
+    /**
+     * Everything registered here is keyed by the feature's slug — the publish
+     * tag, the asset bundle, the blueprint and fieldset namespaces — so two
+     * features with one slug would silently share them. A feature booting twice
+     * is skipped: Statamic's registries append rather than replace.
+     */
+    public function bootFeature(Features $features): void
+    {
+        if ($this->alreadyBooted($features)) {
+            return;
+        }
+
+        $this
+            ->bootBlueprints($features)
+            ->bootExtensions($features)
+            ->bootFieldsets($features)
+            ->bootSubscribers($features)
+            ->bootAssets($features)
+            ->bootUpdateScripts($features);
+    }
+
+    private function addon(Features $features): ?Addon
+    {
+        if (is_null($addon = $this->findAddon($features))) {
+            // Not discovered yet — just installed, inside `statamic:install`.
+            $features->app()->make(Manifest::class)->build();
+            $addon = $this->findAddon($features);
+        }
+
+        return $addon;
+    }
+
+    private function alreadyBooted(Features $features): bool
+    {
+        $path = $this->booted[$slug = $features->slug()] ?? null;
+
+        throw_if(
+            ! is_null($path) && $path !== $features->rootPath(),
+            new RuntimeException("Features at [{$path}] and [{$features->rootPath()}] both have the slug [{$slug}]."),
+        );
+
+        $this->booted[$slug] ??= $features->rootPath();
+
+        return ! is_null($path);
+    }
+
+    /**
+     * Control panel assets: `resources/cp/js` and `resources/cp/css` by
+     * convention, any other `resources/cp` directory published as-is, or
+     * whatever the feature names in its `statamic.*` options. All tagged with
+     * the slug for `vendor:publish`, and published after `statamic:install`,
+     * which only publishes an addon's by the addon's tag.
+     */
+    private function bootAssets(Features $features): static
+    {
+        $publishables = $this->publishables($features);
+        $scripts = $this->scripts($features);
+        $stylesheets = $this->stylesheets($features);
+        $vite = $features->option('statamic.vite');
+
+        if (! empty($publishables)) {
+            $this->publish($features, array_map(fn (string $to) => $this->publicPath($features, $to), $publishables));
+        }
+
+        collect($scripts)->each(fn (string $path) => Statamic::script($features->slug(), $this->publishAsset($features, $path, 'js')));
+        collect($stylesheets)->each(fn (string $path) => Statamic::style($features->slug(), $this->publishAsset($features, $path, 'css')));
+
+        if (! is_null($vite)) {
+            $this->registerVite($features, $vite);
+        }
+
+        if (! empty([...$publishables, ...$scripts, ...$stylesheets]) || ! is_null($vite)) {
+            Statamic::afterInstalled(fn (Command $command) => $this->publishAssets($features, $command));
+        }
+
+        return $this;
+    }
+
+    private function bootBlueprints(Features $features): static
     {
         if (File::isDirectory($path = $features->disk()->path('resources/blueprints'))) {
             Blueprint::addNamespace($features->slug(), $path);
@@ -67,7 +153,7 @@ class Extensions implements Extension
         return $this;
     }
 
-    public function bootExtensions(Features $features): static
+    private function bootExtensions(Features $features): static
     {
         collect(self::EXTENSIONS)
             ->flatMap(fn (string $type, string $folder) => $this->classesIn($features, $folder, $type))
@@ -76,20 +162,7 @@ class Extensions implements Extension
         return $this;
     }
 
-    public function bootFeature(Features $features): void
-    {
-        $this
-            ->bootBlueprints($features)
-            ->bootExtensions($features)
-            ->bootFieldsets($features)
-            ->bootPublishables($features)
-            ->bootPublishAfterInstall($features)
-            ->bootScripts($features)
-            ->bootStylesheets($features)
-            ->bootUpdateScripts($features);
-    }
-
-    public function bootFieldsets(Features $features): static
+    private function bootFieldsets(Features $features): static
     {
         if (File::isDirectory($path = $features->disk()->path('resources/fieldsets'))) {
             Fieldset::addNamespace($features->slug(), $path);
@@ -98,40 +171,9 @@ class Extensions implements Extension
         return $this;
     }
 
-    public function bootPublishables(Features $features): static
+    private function bootSubscribers(Features $features): static
     {
-        if (! empty($publishables = $this->publishables($features))) {
-            $this->publish($features, array_map(fn (string $path) => $this->publicPath($features, $path), $publishables));
-        }
-
-        return $this;
-    }
-
-    /**
-     * `statamic:install` publishes an addon's assets by the addon's tag; a
-     * feature's are tagged with its own slug, so it has to ask for them itself.
-     */
-    public function bootPublishAfterInstall(Features $features): static
-    {
-        if (! empty([...$this->publishables($features), ...$this->scripts($features), ...$this->stylesheets($features)])) {
-            Statamic::afterInstalled(fn (Command $command) => $this->publishAssets($features, $command));
-        }
-
-        return $this;
-    }
-
-    public function bootScripts(Features $features): static
-    {
-        collect($this->scripts($features))
-            ->each(fn (string $path) => Statamic::script($features->slug(), $this->publishAsset($features, $path, 'js')));
-
-        return $this;
-    }
-
-    public function bootStylesheets(Features $features): static
-    {
-        collect($this->stylesheets($features))
-            ->each(fn (string $path) => Statamic::style($features->slug(), $this->publishAsset($features, $path, 'css')));
+        $this->classesIn($features, 'Subscribers')->each(fn (string $subscriber) => Event::subscribe($subscriber));
 
         return $this;
     }
@@ -140,8 +182,12 @@ class Extensions implements Extension
      * An update script runs when a composer package changes version, so only a
      * feature inside an addon has anything to run against.
      */
-    public function bootUpdateScripts(Features $features): static
+    private function bootUpdateScripts(Features $features): static
     {
+        if (! File::isDirectory($features->disk()->path('src/UpdateScripts'))) {
+            return $this;
+        }
+
         if (is_null($addon = $this->addon($features))) {
             return $this;
         }
@@ -153,26 +199,37 @@ class Extensions implements Extension
         return $this;
     }
 
-    private function addon(Features $features): ?Addon
-    {
-        return Addons::all()
-            ->first(fn (Addon $addon) => str_starts_with($features->rootNamespace(), $addon->namespace().'\\'));
-    }
-
     /**
-     * @param  class-string  $type
+     * One level deep, as Statamic scans an addon; nested folders are the
+     * feature's own business and are never loaded.
+     *
+     * @param  class-string|null  $type
      * @return Collection<int, class-string>
      */
-    private function classesIn(Features $features, string $folder, string $type): Collection
+    private function classesIn(Features $features, string $folder, ?string $type = null): Collection
     {
         if (! File::isDirectory($path = $features->disk()->path("src/{$folder}"))) {
             return collect();
         }
 
-        return collect(File::allFiles($path))
+        throw_if(
+            $features->rootNamespace() === '',
+            new RuntimeException("Feature [{$features->slug()}] has no namespace, so nothing in src/{$folder} can be found."),
+        );
+
+        return collect(File::files($path))
+            ->filter(fn (SplFileInfo $file) => $file->getExtension() === 'php')
             ->map(fn (SplFileInfo $file) => $this->className($features, $folder, $file))
             ->filter(fn (string $class) => $this->isConcrete($class, $type))
             ->values();
+    }
+
+    private function className(Features $features, string $folder, SplFileInfo $file): string
+    {
+        return str("{$folder}/{$file->getBasename('.php')}")
+            ->replace('/', '\\')
+            ->prepend($features->rootNamespace().'\\')
+            ->toString();
     }
 
     /** @return Collection<int, string> */
@@ -185,19 +242,20 @@ class Extensions implements Extension
         return collect(File::directories($path));
     }
 
-    private function className(Features $features, string $folder, SplFileInfo $file): string
+    private function findAddon(Features $features): ?Addon
     {
-        return str("{$folder}/{$file->getRelativePathname()}")
-            ->beforeLast('.php')
-            ->replace('/', '\\')
-            ->prepend($features->rootNamespace().'\\')
-            ->toString();
+        return Addons::all()
+            ->first(fn (Addon $addon) => str_starts_with($features->rootNamespace(), $addon->namespace().'\\'));
     }
 
-    /** @param  class-string  $type */
-    private function isConcrete(string $class, string $type): bool
+    /** @param  class-string|null  $type */
+    private function isConcrete(string $class, ?string $type): bool
     {
-        return is_subclass_of($class, $type) && ! (new ReflectionClass($class))->isAbstract();
+        if (! class_exists($class) || (new ReflectionClass($class))->isAbstract()) {
+            return false;
+        }
+
+        return is_null($type) || is_subclass_of($class, $type);
     }
 
     private function publicPath(Features $features, string $path): string
@@ -212,28 +270,28 @@ class Extensions implements Extension
     }
 
     /**
-     * Versioned by the file's contents rather than a package version, which a
-     * feature in a site doesn't have.
+     * Versioned by the file's modification time rather than a package version,
+     * which a feature in a site doesn't have.
      */
     private function publishAsset(Features $features, string $path, string $folder): string
     {
+        throw_unless(
+            is_file($path),
+            new RuntimeException("Asset [{$path}] of feature [{$features->slug()}] does not exist."),
+        );
+
         $this->publish($features, [$path => $this->publicPath($features, "{$folder}/".basename($path))]);
 
-        return basename($path).'?v='.md5_file($path);
+        return basename($path).'?v='.filemtime($path);
     }
 
-    /**
-     * Everything under `resources/cp` but the scripts and stylesheets, each
-     * directory landing under its own name.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     private function publishables(Features $features): array
     {
-        return $features->option('statamic.publishables', $this->cpDirectories($features)
+        return $features->option('statamic.publishables') ?? $this->cpDirectories($features)
             ->reject(fn (string $directory) => in_array(basename($directory), ['css', 'js']))
             ->mapWithKeys(fn (string $directory) => [$directory => basename($directory)])
-            ->all());
+            ->all();
     }
 
     private function publishAssets(Features $features, Command $command): void
@@ -241,15 +299,42 @@ class Extensions implements Extension
         $command->call('vendor:publish', ['--force' => true, '--tag' => $features->slug()]);
     }
 
+    /**
+     * As Statamic registers an addon's Vite build, with the feature's slug
+     * where the addon's package name would go.
+     *
+     * @param  array<string, mixed>|string|array<int, string>  $config
+     */
+    private function registerVite(Features $features, array|string $config): void
+    {
+        if (is_string($config) || ! Arr::isAssoc($config)) {
+            $config = ['input' => $config];
+        }
+
+        $publicDirectory = $config['publicDirectory'] ?? 'public';
+        $buildDirectory = $config['buildDirectory'] ?? 'build';
+        $slug = $features->slug();
+
+        $this->publish($features, [
+            $features->disk()->path("{$publicDirectory}/{$buildDirectory}").'/' => public_path("vendor/{$slug}/{$buildDirectory}/"),
+        ]);
+
+        Statamic::vite($slug, [
+            'hotFile' => $config['hotFile'] ?? $features->disk()->path("{$publicDirectory}/hot"),
+            'buildDirectory' => "vendor/{$slug}/{$buildDirectory}",
+            'input' => $config['input'],
+        ]);
+    }
+
     /** @return array<int, string> */
     private function scripts(Features $features): array
     {
-        return $features->option('statamic.scripts', File::glob($features->disk()->path('resources/cp/js/*.js')));
+        return $features->option('statamic.scripts') ?? File::glob($features->disk()->path('resources/cp/js/*.js'));
     }
 
     /** @return array<int, string> */
     private function stylesheets(Features $features): array
     {
-        return $features->option('statamic.stylesheets', File::glob($features->disk()->path('resources/cp/css/*.css')));
+        return $features->option('statamic.stylesheets') ?? File::glob($features->disk()->path('resources/cp/css/*.css'));
     }
 }

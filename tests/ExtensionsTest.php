@@ -1,8 +1,12 @@
 <?php
 
+use Edalzell\StatamicFeatures\Tests\Fixtures\Addon\Features\Owned;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Addon\Features\Owned\UpdateScripts\OwnedScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Bare;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Bare\Tags\BareTag;
+use Edalzell\StatamicFeatures\Tests\Fixtures\Options;
+use Edalzell\StatamicFeatures\Tests\Fixtures\Orphan;
+use Edalzell\StatamicFeatures\Tests\Fixtures\Orphan\UpdateScripts\OrphanScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Actions\SampleAction;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Dictionaries\SampleDictionary;
@@ -16,8 +20,10 @@ use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\SampleTag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\UpdateScripts\SampleScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Widgets\SampleWidget;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Statamic\Actions\Action;
+use Statamic\Addons\Manifest;
 use Statamic\Dictionaries\Dictionary;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Fieldset;
@@ -95,14 +101,14 @@ it('wont register update scripts for a feature no addon owns', function () {
 it('registers and publishes a feature\'s scripts under its slug', function () {
     $script = samplePath('resources/cp/js/cp.js');
 
-    expect(Statamic::availableScripts(request())['sample'])->toContain('cp.js?v='.md5_file($script))
+    expect(Statamic::availableScripts(request())['sample'])->toContain('cp.js?v='.filemtime($script))
         ->and(published('sample'))->toHaveKey(tidy($script), public_path('vendor/sample/js/cp.js'));
 });
 
 it('registers and publishes a feature\'s stylesheets under its slug', function () {
     $stylesheet = samplePath('resources/cp/css/cp.css');
 
-    expect(Statamic::availableStyles(request())['sample'])->toContain('cp.css?v='.md5_file($stylesheet))
+    expect(Statamic::availableStyles(request())['sample'])->toContain('cp.css?v='.filemtime($stylesheet))
         ->and(published('sample'))->toHaveKey(tidy($stylesheet), public_path('vendor/sample/css/cp.css'));
 });
 
@@ -125,11 +131,11 @@ it('publishes every other resources/cp directory, not js and css', function () {
 });
 
 it('lets a feature name its assets in options instead', function () {
-    (new OptionsServiceProvider(app()))->boot();
+    (new Options\ServiceProvider(app()))->boot();
 
-    expect(Statamic::availableScripts(request())['options'])->toContain('cp.js?v='.md5_file(samplePath('resources/cp/js/cp.js')))
+    expect(Statamic::availableScripts(request())['options'])->toContain('cp.js?v='.filemtime(samplePath('resources/cp/js/cp.js')))
         ->and(Statamic::availableStyles(request()))->not->toHaveKey('options')
-        ->and(published('options', OptionsServiceProvider::class))
+        ->and(published('options', Options\ServiceProvider::class))
         ->toHaveKey(tidy(samplePath('resources/cp/img/logo.svg')), public_path('vendor/options/logo.svg'));
 });
 
@@ -137,28 +143,95 @@ it('publishes a feature\'s assets after Statamic is installed', function () {
     $command = mock(Command::class);
     $command->shouldReceive('call')->atLeast()->once()->with('vendor:publish', ['--force' => true, '--tag' => 'sample']);
     $command->shouldReceive('call')->never()->with('vendor:publish', ['--force' => true, '--tag' => 'bare']);
+    $command->shouldReceive('call'); // other tests' features, since the callbacks are static
 
     Statamic::runAfterInstalledCallbacks($command);
 });
 
-class OptionsServiceProvider extends Sample\ServiceProvider
+it('registers a feature\'s vite build under its slug', function () {
+    (new Options\ServiceProvider(app()))->boot();
+
+    expect(Statamic::availableVites(request())['options'])->toMatchArray([
+        'input' => 'resources/js/options.js',
+        'buildDirectory' => 'vendor/options/build',
+    ])->and(published('options', Options\ServiceProvider::class))
+        ->toHaveKey(tidy(fixturePath('Options/public/build').'/'), public_path('vendor/options/build/'));
+});
+
+it('subscribes a feature\'s subscribers', function () {
+    expect(Event::hasListeners('bare.subscribed'))->toBeTrue();
+});
+
+it('scans one level deep, like Statamic', function () {
+    expect(extensions(Tags::class))->not->toContain(Sample\Tags\Nested\Boom::class);
+});
+
+it('boots a feature only once', function () {
+    (new Owned\ServiceProvider(app()))->boot();
+
+    expect(app('statamic.update-scripts')->where('class', OwnedScript::class))->toHaveCount(1);
+});
+
+it('refuses a second feature with the same slug', function () {
+    (new ImpostorServiceProvider(app()))->boot();
+})->throws(RuntimeException::class, 'both have the slug [bare]');
+
+it('refuses to scan a feature without a namespace', function () {
+    (new GlobalServiceProvider(app()))->boot();
+})->throws(RuntimeException::class, 'has no namespace');
+
+it('rebuilds the addon manifest before giving up on update scripts', function () {
+    $this->partialMock(Manifest::class)->shouldReceive('build')->once();
+
+    (new Orphan\ServiceProvider(app()))->boot();
+
+    expect(app('statamic.update-scripts')->pluck('class'))->not->toContain(OrphanScript::class);
+});
+
+it('fails loudly when an asset named in options is missing', function () {
+    (new MissingAssetServiceProvider(app()))->boot();
+})->throws(RuntimeException::class, 'does not exist');
+
+class ImpostorServiceProvider extends Sample\ServiceProvider
 {
     protected function featuresPath(): string
     {
-        return dirname(__DIR__).'/tests/__fixtures__/Sample';
+        return fixturePath('Sample');
     }
 
     protected function name(): string
     {
-        return 'Options';
+        return 'Bare';
+    }
+}
+
+class GlobalServiceProvider extends Sample\ServiceProvider
+{
+    protected function featuresPath(): string
+    {
+        return fixturePath('Sample');
+    }
+
+    protected function name(): string
+    {
+        return 'Global';
+    }
+}
+
+class MissingAssetServiceProvider extends Options\ServiceProvider
+{
+    protected function featuresPath(): string
+    {
+        return fixturePath('Options');
+    }
+
+    protected function name(): string
+    {
+        return 'Missing';
     }
 
     protected function options(): array
     {
-        return [
-            'statamic.publishables' => [samplePath('resources/cp/img/logo.svg') => 'logo.svg'],
-            'statamic.scripts' => [samplePath('resources/cp/js/cp.js')],
-            'statamic.stylesheets' => [],
-        ];
+        return ['statamic.scripts' => [fixturePath('Bare/resources/cp/js/nope.js')]];
     }
 }

@@ -10,3 +10,8 @@ function featureRoute(string $name): ?RoutingRoute
 {
     return Route::getRoutes()->getByName($name);
 }
+
+function fixturePath(string $path = ''): string
+{
+    return rtrim(__DIR__.'/__fixtures__/'.$path, '/');
+}

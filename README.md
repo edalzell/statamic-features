@@ -15,7 +15,8 @@ This package is a laravel-features [extension](https://github.com/edalzell/larav
 
 | Feature path | What happens |
 |---|---|
-| `src/Actions`, `src/Dictionaries`, `src/Fieldtypes`, `src/Modifiers`, `src/Scopes`, `src/Query/Scopes`, `src/Tags`, `src/Widgets` | Every concrete class of the matching type is registered |
+| `src/Actions`, `src/Dictionaries`, `src/Fieldtypes`, `src/Modifiers`, `src/Scopes`, `src/Query/Scopes`, `src/Query/Scopes/Filters`, `src/Tags`, `src/Widgets` | Every concrete class of the matching type is registered. One level deep, as Statamic scans an addon |
+| `src/Subscribers` | Every class is passed to `Event::subscribe()` |
 | `src/UpdateScripts` | Registered against the addon the feature lives in. Skipped for a feature in a site, which has no package version to update from |
 | `resources/blueprints` | Blueprint namespace, named after the feature's slug: `my-feature::thing` |
 | `resources/fieldsets` | Fieldset namespace, named after the feature's slug: `my-feature::common` |
@@ -39,6 +40,17 @@ MyFeature/
 ```
 
 They land in `public/vendor/my-feature/`, are tagged `my-feature` for `vendor:publish`, and are published automatically by `statamic:install`. To name them yourself instead, return `statamic.scripts`, `statamic.stylesheets` (lists of paths) and `statamic.publishables` (`[from => to]`) from the feature's `options()`.
+
+A Vite build is registered the way an addon's is, from a `statamic.vite` option — the entry point, or the same array an addon's `$vite` property takes:
+
+```php
+protected function options(): array
+{
+    return ['statamic.vite' => ['input' => 'resources/js/cp.js', 'publicDirectory' => 'public']];
+}
+```
+
+Everything above is keyed by the feature's slug, so two features with the same name can't both be loaded; the second throws.
 
 Vite builds and settings blueprints aren't handled per feature — those stay with the addon or site that hosts it.
 

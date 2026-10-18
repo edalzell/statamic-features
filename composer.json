@@ -46,6 +46,8 @@
             "Edalzell\\StatamicFeatures\\Tests\\": "tests/",
             "Edalzell\\StatamicFeatures\\Tests\\Fixtures\\Addon\\Features\\Owned\\": "tests/__fixtures__/Addon/features/Owned/src",
             "Edalzell\\StatamicFeatures\\Tests\\Fixtures\\Bare\\": "tests/__fixtures__/Bare/src",
+            "Edalzell\\StatamicFeatures\\Tests\\Fixtures\\Options\\": "tests/__fixtures__/Options/src",
+            "Edalzell\\StatamicFeatures\\Tests\\Fixtures\\Orphan\\": "tests/__fixtures__/Orphan/src",
             "Edalzell\\StatamicFeatures\\Tests\\Fixtures\\Sample\\": "tests/__fixtures__/Sample/src"
         }
     },
