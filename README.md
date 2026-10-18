@@ -10,7 +10,7 @@ composer require edalzell/statamic-features
 
 That's it. This package is a laravel-features [extension](https://github.com/edalzell/laravel-features#extensions): its provider tags `StatamicAddons`, and laravel-features hands every feature to it once the feature's Laravel pieces have booted. A feature keeps extending laravel-features' `FeatureServiceProvider` and just gains the folders below.
 
-Extend this package's provider instead when a feature has control panel assets or Statamic routes:
+Extend this package's provider instead when a feature has control panel assets or Statamic routes. Statamic adds `Route::statamic()` when its own providers boot, which is after a feature's `routes/web.php` has loaded, so a feature on laravel-features' provider is limited to plain `Route::get()`s; this provider hands the file to Statamic to load once it's ready:
 
 ```php
 namespace Features\Search;
