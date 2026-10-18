@@ -1,0 +1,12 @@
+name: Release Drafter
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  draft:
+    uses: edalzell/github-workflows/.github/workflows/release-draft.yml@d3f1ca37a5377c14d34fc54320cc8d8141badfe5 # v1.5.0
+    permissions:
+      contents: write
+      pull-requests: write
