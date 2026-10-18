@@ -10,15 +10,6 @@ composer require edalzell/statamic-features
 
 This package is a laravel-features [extension](https://github.com/edalzell/laravel-features#extensions): its provider tags `Extensions`, and laravel-features hands every feature to it once the feature's Laravel pieces have booted. A feature keeps extending laravel-features' `FeatureServiceProvider` and just gains the folders below.
 
-Extend this package's provider instead when a feature has control panel assets:
-
-```php
-namespace Features\Search;
-
-use Edalzell\StatamicFeatures\Providers\FeatureServiceProvider;
-
-class ServiceProvider extends FeatureServiceProvider {}
-```
 
 ## What's registered
 
@@ -36,20 +27,18 @@ Routes go through Statamic because `Route::statamic()` only exists once it has b
 
 ## Control panel assets
 
-The same properties an addon's provider has, published under the feature's slug rather than a package name. They need this package's provider; on laravel-features' own, return them from `options()` as `statamic.publishables`, `statamic.scripts` and `statamic.stylesheets`.
+Put them under `resources/cp`: every `js/*.js` is registered as a control panel script and every `css/*.css` as a stylesheet, and any other directory is published as-is:
 
-```php
-class ServiceProvider extends FeatureServiceProvider
-{
-    protected array $publishables = [__DIR__.'/../resources/img' => 'img'];
-
-    protected array $scripts = [__DIR__.'/../resources/js/cp.js'];
-
-    protected array $stylesheets = [__DIR__.'/../resources/css/cp.css'];
-}
+```
+MyFeature/
+└── resources/
+    └── cp/
+        ├── css/my-feature.css   -> Statamic::style('my-feature', …)
+        ├── img/                 -> public/vendor/my-feature/img
+        └── js/my-feature.js     -> Statamic::script('my-feature', …)
 ```
 
-These land in `public/vendor/my-feature/`, are tagged `my-feature` for `vendor:publish`, and are published automatically by `statamic:install`.
+They land in `public/vendor/my-feature/`, are tagged `my-feature` for `vendor:publish`, and are published automatically by `statamic:install`. To name them yourself instead, return `statamic.scripts`, `statamic.stylesheets` (lists of paths) and `statamic.publishables` (`[from => to]`) from the feature's `options()`.
 
 Vite builds and settings blueprints aren't handled per feature — those stay with the addon or site that hosts it.
 

@@ -48,9 +48,14 @@ class Extensions implements Extension
         'Widgets' => Widget::class,
     ];
 
+    /**
+     * Deferred until every provider has booted, Statamic's included. Not
+     * `Statamic::booted()`: that queue drains once, during Statamic's own boot,
+     * so a feature booting after it would never run.
+     */
     public function boot(Features $features): void
     {
-        Statamic::booted(fn () => $this->bootFeature($features));
+        $features->app()->booted(fn () => $this->bootFeature($features));
     }
 
     public function bootBlueprints(Features $features): static
@@ -170,6 +175,16 @@ class Extensions implements Extension
             ->values();
     }
 
+    /** @return Collection<int, string> */
+    private function cpDirectories(Features $features): Collection
+    {
+        if (! File::isDirectory($path = $features->disk()->path('resources/cp'))) {
+            return collect();
+        }
+
+        return collect(File::directories($path));
+    }
+
     private function className(Features $features, string $folder, SplFileInfo $file): string
     {
         return str("{$folder}/{$file->getRelativePathname()}")
@@ -207,10 +222,18 @@ class Extensions implements Extension
         return basename($path).'?v='.md5_file($path);
     }
 
-    /** @return array<string, string> */
+    /**
+     * Everything under `resources/cp` but the scripts and stylesheets, each
+     * directory landing under its own name.
+     *
+     * @return array<string, string>
+     */
     private function publishables(Features $features): array
     {
-        return $features->option('statamic.publishables', []);
+        return $features->option('statamic.publishables', $this->cpDirectories($features)
+            ->reject(fn (string $directory) => in_array(basename($directory), ['css', 'js']))
+            ->mapWithKeys(fn (string $directory) => [$directory => basename($directory)])
+            ->all());
     }
 
     private function publishAssets(Features $features, Command $command): void
@@ -221,12 +244,12 @@ class Extensions implements Extension
     /** @return array<int, string> */
     private function scripts(Features $features): array
     {
-        return $features->option('statamic.scripts', []);
+        return $features->option('statamic.scripts', File::glob($features->disk()->path('resources/cp/js/*.js')));
     }
 
     /** @return array<int, string> */
     private function stylesheets(Features $features): array
     {
-        return $features->option('statamic.stylesheets', []);
+        return $features->option('statamic.stylesheets', File::glob($features->disk()->path('resources/cp/css/*.css')));
     }
 }

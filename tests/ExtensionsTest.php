@@ -39,9 +39,9 @@ function extensions(string $type): array
 }
 
 /** Keys come from the fixture's `__DIR__`, which Windows spells with backslashes. */
-function published(string $tag): array
+function published(string $tag, string $provider = Sample\ServiceProvider::class): array
 {
-    return collect(ServiceProvider::pathsToPublish(Sample\ServiceProvider::class, $tag))
+    return collect(ServiceProvider::pathsToPublish($provider, $tag))
         ->mapWithKeys(fn (string $to, string $from) => [tidy($from) => $to])
         ->all();
 }
@@ -93,14 +93,14 @@ it('wont register update scripts for a feature no addon owns', function () {
 });
 
 it('registers and publishes a feature\'s scripts under its slug', function () {
-    $script = samplePath('src/../resources/js/cp.js');
+    $script = samplePath('resources/cp/js/cp.js');
 
     expect(Statamic::availableScripts(request())['sample'])->toContain('cp.js?v='.md5_file($script))
         ->and(published('sample'))->toHaveKey(tidy($script), public_path('vendor/sample/js/cp.js'));
 });
 
 it('registers and publishes a feature\'s stylesheets under its slug', function () {
-    $stylesheet = samplePath('src/../resources/css/cp.css');
+    $stylesheet = samplePath('resources/cp/css/cp.css');
 
     expect(Statamic::availableStyles(request())['sample'])->toContain('cp.css?v='.md5_file($stylesheet))
         ->and(published('sample'))->toHaveKey(tidy($stylesheet), public_path('vendor/sample/css/cp.css'));
@@ -113,7 +113,24 @@ it('registers no assets for a feature that has none', function () {
 });
 
 it('publishes a feature\'s publishables under its slug', function () {
-    expect(published('sample'))->toHaveKey(tidy(samplePath('src/../resources/img')), public_path('vendor/sample/img'));
+    expect(published('sample'))->toHaveKey(tidy(samplePath('resources/cp/img')), public_path('vendor/sample/img'));
+});
+
+it('publishes every other resources/cp directory, not js and css', function () {
+    expect(array_values(published('sample')))->toBe([
+        public_path('vendor/sample/img'),
+        public_path('vendor/sample/js/cp.js'),
+        public_path('vendor/sample/css/cp.css'),
+    ]);
+});
+
+it('lets a feature name its assets in options instead', function () {
+    (new OptionsServiceProvider(app()))->boot();
+
+    expect(Statamic::availableScripts(request())['options'])->toContain('cp.js?v='.md5_file(samplePath('resources/cp/js/cp.js')))
+        ->and(Statamic::availableStyles(request()))->not->toHaveKey('options')
+        ->and(published('options', OptionsServiceProvider::class))
+        ->toHaveKey(tidy(samplePath('resources/cp/img/logo.svg')), public_path('vendor/options/logo.svg'));
 });
 
 it('publishes a feature\'s assets after Statamic is installed', function () {
@@ -123,3 +140,25 @@ it('publishes a feature\'s assets after Statamic is installed', function () {
 
     Statamic::runAfterInstalledCallbacks($command);
 });
+
+class OptionsServiceProvider extends Sample\ServiceProvider
+{
+    protected function featuresPath(): string
+    {
+        return dirname(__DIR__).'/tests/__fixtures__/Sample';
+    }
+
+    protected function name(): string
+    {
+        return 'Options';
+    }
+
+    protected function options(): array
+    {
+        return [
+            'statamic.publishables' => [samplePath('resources/cp/img/logo.svg') => 'logo.svg'],
+            'statamic.scripts' => [samplePath('resources/cp/js/cp.js')],
+            'statamic.stylesheets' => [],
+        ];
+    }
+}
