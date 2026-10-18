@@ -1,13 +1,5 @@
 <?php
 
-use Illuminate\Routing\Route as RoutingRoute;
-use Illuminate\Support\Facades\Route;
-
-function featureRoute(string $name): ?RoutingRoute
-{
-    return Route::getRoutes()->getByName($name);
-}
-
 it('loads routes/web.php as Statamic web routes', function () {
     expect(featureRoute('sample.web')?->gatherMiddleware())->toContain('statamic-routes');
 });

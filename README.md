@@ -10,7 +10,7 @@ composer require edalzell/statamic-features
 
 That's it. This package is a laravel-features [extension](https://github.com/edalzell/laravel-features#extensions): its provider tags `StatamicAddons`, and laravel-features hands every feature to it once the feature's Laravel pieces have booted. A feature keeps extending laravel-features' `FeatureServiceProvider` and just gains the folders below.
 
-Extend this package's provider instead when a feature has control panel assets or Statamic routes. Statamic adds `Route::statamic()` when its own providers boot, which is after a feature's `routes/web.php` has loaded, so a feature on laravel-features' provider is limited to plain `Route::get()`s; this provider hands the file to Statamic to load once it's ready:
+Extend this package's provider instead when a feature has control panel assets:
 
 ```php
 namespace Features\Search;
@@ -28,11 +28,11 @@ class ServiceProvider extends FeatureServiceProvider {}
 | `src/UpdateScripts` | Registered against the addon the feature lives in. Skipped for a feature in a site, which has no package version to update from |
 | `resources/blueprints` | Blueprint namespace, named after the feature's slug: `my-feature::thing` |
 | `resources/fieldsets` | Fieldset namespace, named after the feature's slug: `my-feature::common` |
-| `routes/web.php` | Statamic web routes (this package's provider only) |
-| `routes/cp.php` | Control panel routes (this package's provider only) |
-| `routes/actions.php` | Action routes, prefixed with the feature's slug: `/!/my-feature/...` (this package's provider only) |
+| `routes/web.php` | Statamic web routes |
+| `routes/cp.php` | Control panel routes |
+| `routes/actions.php` | Action routes, prefixed with the feature's slug: `/!/my-feature/...` |
 
-Other route files keep the groups laravel-features gives them.
+Routes go through Statamic because `Route::statamic()` only exists once it has booted, after a feature's route files load. The provider sets these three as `features.route_groups` entries for every feature; override `routeGroups()` on one feature's provider to change them for that feature. Other route files keep the groups laravel-features gives them.
 
 ## Control panel assets
 
