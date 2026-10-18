@@ -17,7 +17,7 @@ class ServiceProvider extends LaravelServiceProvider
      */
     public function register(): void
     {
-        $this->app->tag(StatamicAddons::class, Extension::TAG);
+        $this->app->tag(Extensions::class, Extension::TAG);
 
         config()->set('features.route_groups', [
             ...config('features.route_groups', []),

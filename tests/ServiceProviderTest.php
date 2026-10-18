@@ -1,14 +1,14 @@
 <?php
 
 use Edalzell\Features\Contracts\Extension;
+use Edalzell\StatamicFeatures\Extensions;
 use Edalzell\StatamicFeatures\Routes\Actions;
 use Edalzell\StatamicFeatures\Routes\Cp;
 use Edalzell\StatamicFeatures\Routes\Web;
-use Edalzell\StatamicFeatures\StatamicAddons;
 
 it('tags the extension', function () {
     expect(collect(app()->tagged(Extension::TAG))->map(fn (Extension $extension) => $extension::class)->all())
-        ->toContain(StatamicAddons::class);
+        ->toContain(Extensions::class);
 });
 
 it('sends every feature\'s web, cp and action routes through Statamic', function () {

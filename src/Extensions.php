@@ -30,7 +30,7 @@ use Symfony\Component\Finder\SplFileInfo;
  * Statamic's own registries only know the app's and each addon's, so without
  * this a feature's tags, fieldtypes and the rest go unseen.
  */
-class StatamicAddons implements Extension
+class Extensions implements Extension
 {
     /**
      * The folders Statamic scans in an app or addon, relative to `src`.

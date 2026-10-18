@@ -8,7 +8,7 @@ Self-contained features for Statamic, in an addon or in a site's own `features/`
 composer require edalzell/statamic-features
 ```
 
-That's it. This package is a laravel-features [extension](https://github.com/edalzell/laravel-features#extensions): its provider tags `StatamicAddons`, and laravel-features hands every feature to it once the feature's Laravel pieces have booted. A feature keeps extending laravel-features' `FeatureServiceProvider` and just gains the folders below.
+That's it. This package is a laravel-features [extension](https://github.com/edalzell/laravel-features#extensions): its provider tags `Extensions`, and laravel-features hands every feature to it once the feature's Laravel pieces have booted. A feature keeps extending laravel-features' `FeatureServiceProvider` and just gains the folders below.
 
 Extend this package's provider instead when a feature has control panel assets:
 
