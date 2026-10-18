@@ -2,6 +2,7 @@
 
 use Edalzell\StatamicFeatures\Tests\Fixtures\Addon\Features\Owned\UpdateScripts\OwnedScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Bare;
+use Edalzell\StatamicFeatures\Tests\Fixtures\Bare\Tags\BareTag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Actions\SampleAction;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Dictionaries\SampleDictionary;
@@ -37,6 +38,19 @@ function extensions(string $type): array
     return app('statamic.extensions')[$type]->all();
 }
 
+/** Keys come from the fixture's `__DIR__`, which Windows spells with backslashes. */
+function published(string $tag): array
+{
+    return collect(ServiceProvider::pathsToPublish(Sample\ServiceProvider::class, $tag))
+        ->mapWithKeys(fn (string $to, string $from) => [tidy($from) => $to])
+        ->all();
+}
+
+function tidy(string $path): string
+{
+    return str_replace('\\', '/', $path);
+}
+
 it('registers a feature\'s extensions', function (string $type, string $extension) {
     expect(extensions($type))->toContain($extension);
 })->with([
@@ -49,6 +63,11 @@ it('registers a feature\'s extensions', function (string $type, string $extensio
     'tag' => [Tags::class, SampleTag::class],
     'widget' => [Widget::class, SampleWidget::class],
 ]);
+
+it('registers extensions for a feature on the plain laravel-features provider', function () {
+    expect(extensions(Tags::class))->toContain(BareTag::class)
+        ->and(Fieldset::find('bare::plain'))->not->toBeNull();
+});
 
 it('wont register abstract extensions or classes of another type', function () {
     expect(extensions(Tags::class))
@@ -77,16 +96,14 @@ it('registers and publishes a feature\'s scripts under its slug', function () {
     $script = samplePath('src/../resources/js/cp.js');
 
     expect(Statamic::availableScripts(request())['sample'])->toContain('cp.js?v='.md5_file($script))
-        ->and(ServiceProvider::pathsToPublish(Sample\ServiceProvider::class, 'sample'))
-        ->toHaveKey($script, public_path('vendor/sample/js/cp.js'));
+        ->and(published('sample'))->toHaveKey(tidy($script), public_path('vendor/sample/js/cp.js'));
 });
 
 it('registers and publishes a feature\'s stylesheets under its slug', function () {
     $stylesheet = samplePath('src/../resources/css/cp.css');
 
     expect(Statamic::availableStyles(request())['sample'])->toContain('cp.css?v='.md5_file($stylesheet))
-        ->and(ServiceProvider::pathsToPublish(Sample\ServiceProvider::class, 'sample'))
-        ->toHaveKey($stylesheet, public_path('vendor/sample/css/cp.css'));
+        ->and(published('sample'))->toHaveKey(tidy($stylesheet), public_path('vendor/sample/css/cp.css'));
 });
 
 it('registers no assets for a feature that has none', function () {
@@ -96,8 +113,7 @@ it('registers no assets for a feature that has none', function () {
 });
 
 it('publishes a feature\'s publishables under its slug', function () {
-    expect(ServiceProvider::pathsToPublish(Sample\ServiceProvider::class, 'sample'))
-        ->toHaveKey(samplePath('src/../resources/img'), public_path('vendor/sample/img'));
+    expect(published('sample'))->toHaveKey(tidy(samplePath('src/../resources/img')), public_path('vendor/sample/img'));
 });
 
 it('publishes a feature\'s assets after Statamic is installed', function () {

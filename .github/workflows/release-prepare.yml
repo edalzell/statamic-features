@@ -1,0 +1,12 @@
+name: Release Prepare
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    uses: edalzell/github-workflows/.github/workflows/release-prepare.yml@d3f1ca37a5377c14d34fc54320cc8d8141badfe5 # v1.5.0
+    permissions:
+      contents: write
+    secrets:
+      release_token: ${{ secrets.RELEASE_TOKEN }}

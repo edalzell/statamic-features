@@ -2,6 +2,6 @@
 
 namespace Edalzell\StatamicFeatures\Tests\Fixtures\Bare;
 
-use Edalzell\StatamicFeatures\Providers\FeatureServiceProvider;
+use Edalzell\Features\Providers\FeatureServiceProvider;
 
 class ServiceProvider extends FeatureServiceProvider {}
