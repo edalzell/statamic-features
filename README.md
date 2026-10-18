@@ -4,7 +4,13 @@ Self-contained features for Statamic, in an addon or in a site's own `features/`
 
 ## Usage
 
-Extend this package's provider in the feature's `src/ServiceProvider.php` instead of laravel-features' one:
+```bash
+composer require edalzell/statamic-features
+```
+
+That's it. This package is a laravel-features [extension](https://github.com/edalzell/laravel-features#extensions): its provider tags `StatamicAddons`, and laravel-features hands every feature to it once the feature's Laravel pieces have booted. A feature keeps extending laravel-features' `FeatureServiceProvider` and just gains the folders below.
+
+Extend this package's provider instead when a feature has control panel assets or Statamic routes:
 
 ```php
 namespace Features\Search;
@@ -14,8 +20,6 @@ use Edalzell\StatamicFeatures\Providers\FeatureServiceProvider;
 class ServiceProvider extends FeatureServiceProvider {}
 ```
 
-Features are discovered the same way as before, and Statamic and plain Laravel features can sit side by side.
-
 ## What's registered
 
 | Feature path | What happens |
@@ -24,15 +28,15 @@ Features are discovered the same way as before, and Statamic and plain Laravel f
 | `src/UpdateScripts` | Registered against the addon the feature lives in. Skipped for a feature in a site, which has no package version to update from |
 | `resources/blueprints` | Blueprint namespace, named after the feature's slug: `my-feature::thing` |
 | `resources/fieldsets` | Fieldset namespace, named after the feature's slug: `my-feature::common` |
-| `routes/web.php` | Statamic web routes |
-| `routes/cp.php` | Control panel routes |
-| `routes/actions.php` | Action routes, prefixed with the feature's slug: `/!/my-feature/...` |
+| `routes/web.php` | Statamic web routes (this package's provider only) |
+| `routes/cp.php` | Control panel routes (this package's provider only) |
+| `routes/actions.php` | Action routes, prefixed with the feature's slug: `/!/my-feature/...` (this package's provider only) |
 
 Other route files keep the groups laravel-features gives them.
 
 ## Control panel assets
 
-The same properties an addon's provider has, published under the feature's slug rather than a package name:
+The same properties an addon's provider has, published under the feature's slug rather than a package name. They need this package's provider; on laravel-features' own, return them from `options()` as `statamic.publishables`, `statamic.scripts` and `statamic.stylesheets`.
 
 ```php
 class ServiceProvider extends FeatureServiceProvider
