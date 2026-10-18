@@ -3,6 +3,7 @@
 namespace Edalzell\StatamicFeatures\Tests;
 
 use Edalzell\Features\ServiceProvider as FeaturesServiceProvider;
+use Edalzell\StatamicFeatures\ServiceProvider;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Addon\Features\Owned;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Bare;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample;
@@ -52,6 +53,7 @@ class TestCase extends Orchestra
             StatamicServiceProvider::class,
             InertiaServiceProvider::class,
             FeaturesServiceProvider::class,
+            ServiceProvider::class,
             Bare\ServiceProvider::class,
             Owned\ServiceProvider::class,
             Sample\ServiceProvider::class,

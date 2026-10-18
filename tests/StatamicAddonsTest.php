@@ -2,6 +2,7 @@
 
 use Edalzell\StatamicFeatures\Tests\Fixtures\Addon\Features\Owned\UpdateScripts\OwnedScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Bare;
+use Edalzell\StatamicFeatures\Tests\Fixtures\Bare\Tags\BareTag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Actions\SampleAction;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Dictionaries\SampleDictionary;
@@ -49,6 +50,11 @@ it('registers a feature\'s extensions', function (string $type, string $extensio
     'tag' => [Tags::class, SampleTag::class],
     'widget' => [Widget::class, SampleWidget::class],
 ]);
+
+it('registers extensions for a feature on the plain laravel-features provider', function () {
+    expect(extensions(Tags::class))->toContain(BareTag::class)
+        ->and(Fieldset::find('bare::plain'))->not->toBeNull();
+});
 
 it('wont register abstract extensions or classes of another type', function () {
     expect(extensions(Tags::class))

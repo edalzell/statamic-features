@@ -4,11 +4,14 @@ namespace Edalzell\StatamicFeatures\Providers;
 
 use Closure;
 use Edalzell\Features\Providers\FeatureServiceProvider as BaseProvider;
-use Edalzell\StatamicFeatures\Features;
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Statamic\Statamic;
 
+/**
+ * Optional. Any feature gets its Statamic pieces registered through the tagged
+ * extension; extending this instead adds the addon-style asset properties and
+ * sends the feature's web, control panel and action routes through Statamic.
+ */
 abstract class FeatureServiceProvider extends BaseProvider
 {
     /** @var array<string, string> */
@@ -20,25 +23,14 @@ abstract class FeatureServiceProvider extends BaseProvider
     /** @var array<int, string> */
     protected array $stylesheets = [];
 
-    private Features $statamic;
-
-    public function __construct(Application $app)
+    /** @return array<string, mixed> */
+    protected function options(): array
     {
-        parent::__construct($app);
-
-        $this->statamic = (new Features($this))
-            ->path($this->featuresPath())
-            ->publishables($this->publishables)
-            ->scripts($this->scripts)
-            ->slug($this->slug())
-            ->stylesheets($this->stylesheets);
-    }
-
-    public function boot(): void
-    {
-        parent::boot();
-
-        Statamic::booted(fn () => $this->statamic->bootFeature());
+        return [
+            'statamic.publishables' => $this->publishables,
+            'statamic.scripts' => $this->scripts,
+            'statamic.stylesheets' => $this->stylesheets,
+        ];
     }
 
     /**
