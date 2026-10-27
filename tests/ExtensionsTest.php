@@ -176,10 +176,6 @@ it('refuses a second feature with the same slug', function () {
     (new ImpostorServiceProvider(app()))->boot();
 })->throws(RuntimeException::class, 'both have the slug [bare]');
 
-it('refuses to scan a feature without a namespace', function () {
-    (new GlobalServiceProvider(app()))->boot();
-})->throws(RuntimeException::class, 'has no namespace');
-
 it('rebuilds the addon manifest before giving up on update scripts', function () {
     $this->partialMock(Manifest::class)->shouldReceive('build')->once();
 
@@ -202,19 +198,6 @@ class ImpostorServiceProvider extends Sample\ServiceProvider
     protected function name(): string
     {
         return 'Bare';
-    }
-}
-
-class GlobalServiceProvider extends Sample\ServiceProvider
-{
-    protected function featuresPath(): string
-    {
-        return fixturePath('Sample');
-    }
-
-    protected function name(): string
-    {
-        return 'Global';
     }
 }
 

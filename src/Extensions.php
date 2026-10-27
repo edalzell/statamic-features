@@ -9,8 +9,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
-use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
 use Statamic\Actions\Action;
@@ -208,23 +206,7 @@ class Extensions implements Extension
      */
     private function classesIn(Features $features, string $folder, ?string $type = null): Collection
     {
-        if (! File::isDirectory($features->pathTo("src/{$folder}"))) {
-            return collect();
-        }
-
-        throw_if(
-            $features->rootNamespace() === '',
-            new RuntimeException("Feature [{$features->slug()}] has no namespace, so nothing in src/{$folder} can be found."),
-        );
-
-        $namespace = str($folder)->replace('/', '\\')->prepend($features->rootNamespace().'\\')->toString();
-
-        // No base: with one ClassFinder autoloads every class it finds, nested ones included.
-        return $features
-            ->classes($folder)
-            ->filter(fn (string $class) => Str::beforeLast($class, '\\') === $namespace)
-            ->filter(fn (string $class) => $this->isConcrete($class, $type))
-            ->values();
+        return $features->classes($folder, $type, depth: 0);
     }
 
     /** @return Collection<int, string> */
@@ -241,16 +223,6 @@ class Extensions implements Extension
     {
         return Addons::all()
             ->first(fn (Addon $addon) => str_starts_with($features->rootNamespace(), $addon->namespace().'\\'));
-    }
-
-    /** @param  class-string|null  $type */
-    private function isConcrete(string $class, ?string $type): bool
-    {
-        if (! class_exists($class) || (new ReflectionClass($class))->isAbstract()) {
-            return false;
-        }
-
-        return is_null($type) || is_subclass_of($class, $type);
     }
 
     private function publicPath(Features $features, string $path): string
