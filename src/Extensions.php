@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
@@ -26,7 +27,6 @@ use Statamic\Statamic;
 use Statamic\Tags\Tags;
 use Statamic\UpdateScripts\UpdateScript;
 use Statamic\Widgets\Widget;
-use Symfony\Component\Finder\SplFileInfo;
 
 /**
  * What Statamic's AddonServiceProvider does for an addon, done for a feature.
@@ -208,7 +208,7 @@ class Extensions implements Extension
      */
     private function classesIn(Features $features, string $folder, ?string $type = null): Collection
     {
-        if (! File::isDirectory($path = $features->pathTo("src/{$folder}"))) {
+        if (! File::isDirectory($features->pathTo("src/{$folder}"))) {
             return collect();
         }
 
@@ -217,19 +217,14 @@ class Extensions implements Extension
             new RuntimeException("Feature [{$features->slug()}] has no namespace, so nothing in src/{$folder} can be found."),
         );
 
-        return collect(File::files($path))
-            ->filter(fn (SplFileInfo $file) => $file->getExtension() === 'php')
-            ->map(fn (SplFileInfo $file) => $this->className($features, $folder, $file))
+        $namespace = str($folder)->replace('/', '\\')->prepend($features->rootNamespace().'\\')->toString();
+
+        // No base: with one ClassFinder autoloads every class it finds, nested ones included.
+        return $features
+            ->classes($folder)
+            ->filter(fn (string $class) => Str::beforeLast($class, '\\') === $namespace)
             ->filter(fn (string $class) => $this->isConcrete($class, $type))
             ->values();
-    }
-
-    private function className(Features $features, string $folder, SplFileInfo $file): string
-    {
-        return str("{$folder}/{$file->getBasename('.php')}")
-            ->replace('/', '\\')
-            ->prepend($features->rootNamespace().'\\')
-            ->toString();
     }
 
     /** @return Collection<int, string> */
