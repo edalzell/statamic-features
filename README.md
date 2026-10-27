@@ -52,7 +52,7 @@ protected function options(): array
 
 Everything above is keyed by the feature's slug, so two features with the same name can't both be loaded; the second throws.
 
-Vite builds and settings blueprints aren't handled per feature — those stay with the addon or site that hosts it.
+Settings blueprints aren't handled per feature — those stay with the addon or site that hosts it.
 
 ## Testing
 
