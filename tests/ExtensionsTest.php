@@ -158,6 +158,22 @@ it('registers a feature\'s vite build under its slug', function () {
         ->toHaveKey(tidy(fixturePath('Options/public/build').'/'), public_path('vendor/options/build/'));
 });
 
+it('allows a feature\'s serializable classes next to the existing ones', function () {
+    config(['cache.serializable_classes' => ['Existing']]);
+
+    (new Options\ServiceProvider(app()))->boot();
+
+    expect(config('cache.serializable_classes'))->toBe(['Existing', Options\ServiceProvider::class]);
+});
+
+it('leaves serializable classes alone when everything is allowed', function (?bool $allowed) {
+    config(['cache.serializable_classes' => $allowed]);
+
+    (new Options\ServiceProvider(app()))->boot();
+
+    expect(config('cache.serializable_classes'))->toBe($allowed);
+})->with([null, true]);
+
 it('subscribes a feature\'s subscribers', function () {
     expect(Event::hasListeners('bare.subscribed'))->toBeTrue();
 });
