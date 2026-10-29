@@ -80,6 +80,7 @@ class Extensions implements Extension
             ->bootBlueprints($features)
             ->bootExtensions($features)
             ->bootFieldsets($features)
+            ->bootSerializableClasses($features)
             ->bootSubscribers($features)
             ->bootAssets($features)
             ->bootUpdateScripts($features);
@@ -165,6 +166,24 @@ class Extensions implements Extension
         if (File::isDirectory($path = $features->pathTo('resources/fieldsets'))) {
             Fieldset::addNamespace($features->slug(), $path);
         }
+
+        return $this;
+    }
+
+    /**
+     * As Statamic does for an addon: merged into `cache.serializable_classes`,
+     * and left alone when that is `null` or `true`, which already allow everything.
+     */
+    private function bootSerializableClasses(Features $features): static
+    {
+        $classes = $features->option('statamic.serializable_classes') ?? [];
+        $existing = config('cache.serializable_classes');
+
+        if (empty($classes) || $existing === null || $existing === true) {
+            return $this;
+        }
+
+        config(['cache.serializable_classes' => array_merge(is_array($existing) ? $existing : [], $classes)]);
 
         return $this;
     }

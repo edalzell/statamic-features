@@ -14,6 +14,7 @@ class ServiceProvider extends FeatureServiceProvider
         return [
             'statamic.publishables' => ["{$sample}/img/logo.svg" => 'logo.svg'],
             'statamic.scripts' => ["{$sample}/js/cp.js"],
+            'statamic.serializable_classes' => [self::class],
             'statamic.stylesheets' => [],
             'statamic.vite' => 'resources/js/options.js',
         ];

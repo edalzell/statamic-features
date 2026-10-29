@@ -50,6 +50,15 @@ protected function options(): array
 }
 ```
 
+Classes a feature stores in the cache, such as the items of its own Stache store, must be allowed in `cache.serializable_classes`. List them in a `statamic.serializable_classes` option and they are merged into the config as Statamic does for an addon:
+
+```php
+protected function options(): array
+{
+    return ['statamic.serializable_classes' => [Product::class]];
+}
+```
+
 Everything above is keyed by the feature's slug, so two features with the same name can't both be loaded; the second throws.
 
 Settings blueprints aren't handled per feature — those stay with the addon or site that hosts it.
