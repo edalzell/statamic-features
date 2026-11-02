@@ -2,16 +2,15 @@
 
 namespace Edalzell\StatamicFeatures;
 
+use Closure;
 use Edalzell\Features\Extension;
 use Edalzell\Features\Features;
-use Edalzell\StatamicFeatures\Routes\Actions;
-use Edalzell\StatamicFeatures\Routes\Cp;
-use Edalzell\StatamicFeatures\Routes\Web;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 use ReflectionMethod;
 use RuntimeException;
 use Statamic\Actions\Action;
@@ -93,14 +92,14 @@ class Extensions extends Extension
      * and `Route::statamic()` only exists once it has booted, so a feature's go
      * through the same door rather than into a plain route group.
      *
-     * @return array<string, class-string>
+     * @return array<string, Closure>
      */
     public function routeGroups(): array
     {
         return [
-            'actions' => Actions::class,
-            'cp' => Cp::class,
-            'web' => Web::class,
+            'actions' => $this->loadActionRoutes(...),
+            'cp' => $this->loadCpRoutes(...),
+            'web' => $this->loadWebRoutes(...),
         ];
     }
 
@@ -242,6 +241,21 @@ class Extensions extends Extension
     {
         return Addons::all()
             ->first(fn (Addon $addon) => str_starts_with($features->rootNamespace(), $addon->namespace().'\\'));
+    }
+
+    private function loadActionRoutes(string $path, Features $features): void
+    {
+        Statamic::pushActionRoutes(fn () => Route::prefix($features->slug())->group($path));
+    }
+
+    private function loadCpRoutes(string $path): void
+    {
+        Statamic::pushCpRoutes(fn () => Route::group([], $path));
+    }
+
+    private function loadWebRoutes(string $path): void
+    {
+        Statamic::pushWebRoutes(fn () => Route::group([], $path));
     }
 
     private function publicPath(Features $features, string $path): string
