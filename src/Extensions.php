@@ -54,19 +54,6 @@ class Extensions extends Extension
         'Widgets' => Widget::class,
     ];
 
-    /**
-     * Statamic mounts an addon's web, control panel and action routes itself,
-     * and `Route::statamic()` only exists once it has booted, so a feature's go
-     * through the same door rather than into a plain route group.
-     *
-     * @var array<string, class-string>
-     */
-    private const array ROUTE_GROUPS = [
-        'actions' => Actions::class,
-        'cp' => Cp::class,
-        'web' => Web::class,
-    ];
-
     /** @var array<string, string> slug => root path */
     private array $booted = [];
 
@@ -101,10 +88,20 @@ class Extensions extends Extension
             ->bootUpdateScripts($features);
     }
 
-    /** @return array<string, class-string> */
+    /**
+     * Statamic mounts an addon's web, control panel and action routes itself,
+     * and `Route::statamic()` only exists once it has booted, so a feature's go
+     * through the same door rather than into a plain route group.
+     *
+     * @return array<string, class-string>
+     */
     public function routeGroups(): array
     {
-        return self::ROUTE_GROUPS;
+        return [
+            'actions' => Actions::class,
+            'cp' => Cp::class,
+            'web' => Web::class,
+        ];
     }
 
     private function addon(Features $features): ?Addon
