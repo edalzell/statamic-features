@@ -2,8 +2,11 @@
 
 namespace Edalzell\StatamicFeatures;
 
-use Edalzell\Features\Contracts\Extension;
+use Edalzell\Features\Extension;
 use Edalzell\Features\Features;
+use Edalzell\StatamicFeatures\Routes\Actions;
+use Edalzell\StatamicFeatures\Routes\Cp;
+use Edalzell\StatamicFeatures\Routes\Web;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -32,7 +35,7 @@ use Statamic\Widgets\Widget;
  * Statamic's own registries only know the app's and each addon's, so without
  * this a feature's tags, fieldtypes and the rest go unseen.
  */
-class Extensions implements Extension
+class Extensions extends Extension
 {
     /**
      * The folders Statamic scans in an app or addon, relative to `src`.
@@ -49,6 +52,19 @@ class Extensions implements Extension
         'Scopes' => Scope::class,
         'Tags' => Tags::class,
         'Widgets' => Widget::class,
+    ];
+
+    /**
+     * Statamic mounts an addon's web, control panel and action routes itself,
+     * and `Route::statamic()` only exists once it has booted, so a feature's go
+     * through the same door rather than into a plain route group.
+     *
+     * @var array<string, class-string>
+     */
+    private const array ROUTE_GROUPS = [
+        'actions' => Actions::class,
+        'cp' => Cp::class,
+        'web' => Web::class,
     ];
 
     /** @var array<string, string> slug => root path */
@@ -83,6 +99,12 @@ class Extensions implements Extension
             ->bootSubscribers($features)
             ->bootAssets($features)
             ->bootUpdateScripts($features);
+    }
+
+    /** @return array<string, class-string> */
+    public function routeGroups(): array
+    {
+        return self::ROUTE_GROUPS;
     }
 
     private function addon(Features $features): ?Addon
