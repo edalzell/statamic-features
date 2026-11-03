@@ -54,6 +54,8 @@ class Extensions extends Extension
      */
     public function boot(Features $features): void
     {
+        $this->bootSerializableClasses($features);
+
         $features->app()->booted(fn () => $this->bootFeature($features));
     }
 
@@ -154,6 +156,24 @@ class Extensions extends Extension
         if (File::isDirectory($path = $features->pathTo('resources/fieldsets'))) {
             Fieldset::addNamespace($features->slug(), $path);
         }
+
+        return $this;
+    }
+
+    private function bootSerializableClasses(Features $features): static
+    {
+        $existing = config('cache.serializable_classes');
+
+        if (is_null($existing) || $existing === true) {
+            return $this;
+        }
+
+        config([
+            'cache.serializable_classes' => array_merge(
+                is_array($existing) ? $existing : [],
+                $features->option('statamic.serializable_classes', []),
+            ),
+        ]);
 
         return $this;
     }
