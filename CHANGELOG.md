@@ -1,5 +1,24 @@
 # Changelog
 
+## v2.0.0 - 2026-11-03
+
+### ⚠️ Breaking
+
+- Use Extension for route groups [@edalzell](https://github.com/edalzell) (#15)
+
+### 🚀 New
+
+- Allow a feature to register serializable classes [@marcorieser](https://github.com/marcorieser) (#14)
+
+### 🧰 Maintenance
+
+- Use github-workflows v1.5.2 [@edalzell](https://github.com/edalzell) (#20)
+- Add a Breaking section to release notes [@edalzell](https://github.com/edalzell) (#19)
+- Improve docs [@edalzell](https://github.com/edalzell) (#17)
+- Draft releases for merged fork PRs [@edalzell](https://github.com/edalzell) (#18)
+- Run CI on pull requests [@edalzell](https://github.com/edalzell) (#16)
+- Use Extension for route groups [@edalzell](https://github.com/edalzell) (#15)
+
 ## v1.0.1 - 2026-10-27
 
 ### 🧰 Maintenance
