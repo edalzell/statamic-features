@@ -2,7 +2,6 @@
 
 namespace Edalzell\StatamicFeatures;
 
-use Closure;
 use Edalzell\Features\Extension;
 use Edalzell\Features\Features;
 use Illuminate\Console\Command;
@@ -28,12 +27,6 @@ use Statamic\Tags\Tags;
 use Statamic\UpdateScripts\UpdateScript;
 use Statamic\Widgets\Widget;
 
-/**
- * What Statamic's AddonServiceProvider does for an addon, done for a feature.
- * laravel-features hands every feature here once its Laravel pieces have booted;
- * Statamic's own registries only know the app's and each addon's, so without
- * this a feature's tags, fieldtypes and the rest go unseen.
- */
 class Extensions extends Extension
 {
     /**
@@ -57,21 +50,13 @@ class Extensions extends Extension
     private array $booted = [];
 
     /**
-     * Deferred until every provider has booted, Statamic's included. Not
-     * `Statamic::booted()`: that queue drains once, during Statamic's own boot,
-     * so a feature booting after it would never run.
+     * Deferred until every provider has booted
      */
     public function boot(Features $features): void
     {
         $features->app()->booted(fn () => $this->bootFeature($features));
     }
 
-    /**
-     * Everything registered here is keyed by the feature's slug — the publish
-     * tag, the asset bundle, the blueprint and fieldset namespaces — so two
-     * features with one slug would silently share them. A feature booting twice
-     * is skipped: Statamic's registries append rather than replace.
-     */
     public function bootFeature(Features $features): void
     {
         if ($this->alreadyBooted($features)) {
@@ -87,12 +72,6 @@ class Extensions extends Extension
             ->bootUpdateScripts($features);
     }
 
-    /**
-     * Through Statamic, as an addon's are: `Route::statamic()` doesn't exist
-     * until it has booted.
-     *
-     * @return array<string, Closure>
-     */
     public function routeGroups(): array
     {
         return [
