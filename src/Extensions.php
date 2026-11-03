@@ -106,13 +106,6 @@ class Extensions extends Extension
         return ! is_null($path);
     }
 
-    /**
-     * Control panel assets: `resources/cp/js` and `resources/cp/css` by
-     * convention, any other `resources/cp` directory published as-is, or
-     * whatever the feature names in its `statamic.*` options. All tagged with
-     * the slug for `vendor:publish`, and published after `statamic:install`,
-     * which only publishes an addon's by the addon's tag.
-     */
     private function bootAssets(Features $features): static
     {
         $publishables = $this->publishables($features);
@@ -172,10 +165,6 @@ class Extensions extends Extension
         return $this;
     }
 
-    /**
-     * An update script runs when a composer package changes version, so only a
-     * feature inside an addon has anything to run against.
-     */
     private function bootUpdateScripts(Features $features): static
     {
         if (! File::isDirectory($features->pathTo('src/UpdateScripts'))) {
@@ -194,9 +183,6 @@ class Extensions extends Extension
     }
 
     /**
-     * One level deep, as Statamic scans an addon; nested folders are the
-     * feature's own business and are never loaded.
-     *
      * @param  class-string|null  $type
      * @return Collection<int, class-string>
      */
@@ -205,7 +191,9 @@ class Extensions extends Extension
         return $features->classes($folder, $type, depth: 0);
     }
 
-    /** @return Collection<int, string> */
+    /**
+     * @return Collection<int, string>
+     */
     private function cpDirectories(Features $features): Collection
     {
         if (! File::isDirectory($path = $features->pathTo('resources/cp'))) {
@@ -241,16 +229,14 @@ class Extensions extends Extension
         return public_path("vendor/{$features->slug()}/{$path}");
     }
 
-    /** @param  array<string, string>  $paths */
+    /**
+     * @param  array<string, string>  $paths
+     */
     private function publish(Features $features, array $paths): void
     {
         (new ReflectionMethod($features->provider(), 'publishes'))->invoke($features->provider(), $paths, $features->slug());
     }
 
-    /**
-     * Versioned by the file's modification time rather than a package version,
-     * which a feature in a site doesn't have.
-     */
     private function publishAsset(Features $features, string $path, string $folder): string
     {
         throw_unless(
@@ -263,7 +249,9 @@ class Extensions extends Extension
         return basename($path).'?v='.filemtime($path);
     }
 
-    /** @return array<string, string> */
+    /**
+     * @return array<string, string>
+     */
     private function publishables(Features $features): array
     {
         return $features->option('statamic.publishables') ?? $this->cpDirectories($features)
@@ -278,9 +266,6 @@ class Extensions extends Extension
     }
 
     /**
-     * As Statamic registers an addon's Vite build, with the feature's slug
-     * where the addon's package name would go.
-     *
      * @param  array<string, mixed>|string|array<int, string>  $config
      */
     private function registerVite(Features $features, array|string $config): void
@@ -304,13 +289,17 @@ class Extensions extends Extension
         ]);
     }
 
-    /** @return array<int, string> */
+    /**
+     * @return array<int, string>
+     */
     private function scripts(Features $features): array
     {
         return $features->option('statamic.scripts') ?? File::glob($features->pathTo('resources/cp/js/*.js'));
     }
 
-    /** @return array<int, string> */
+    /**
+     * @return array<int, string>
+     */
     private function stylesheets(Features $features): array
     {
         return $features->option('statamic.stylesheets') ?? File::glob($features->pathTo('resources/cp/css/*.css'));
