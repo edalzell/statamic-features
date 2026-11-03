@@ -23,11 +23,8 @@ This package is a laravel-features [extension](https://github.com/edalzell/larav
 | `routes/cp.php` | Control panel routes |
 | `routes/actions.php` | Action routes, prefixed with the feature's slug: `/!/my-feature/...` |
 
-Routes go through Statamic because `Route::statamic()` only exists once it has booted, after a feature's route files load. The extension supplies these three route groups for every feature; override `routeGroups()` on one feature's provider to change them for that feature. Other route files keep the groups laravel-features gives them.
-
-Everything above is keyed by the feature's slug, so two features with the same name can't both be loaded; the second throws.
-
-Settings blueprints aren't handled per feature — those stay with the addon or site that hosts it.
+## Routes
+To change how a feature's route files load, override `routeGroups()` on its provider with the `web`, `cp` or `actions` key, as laravel-features [documents](https://github.com/edalzell/laravel-features#route-groups).
 
 ## Control panel assets
 
@@ -55,7 +52,7 @@ protected function options(): array
 
 ## Serializable classes
 
-Classes a feature stores in the cache, such as the items of its own Stache store, must be listed in `cache.serializable_classes`. Name them in the feature's `options()` and they are added to it, as Statamic does for an addon. Nothing is added when the cache config is `null` or `true`, which already allow every class:
+Classes stored in the cache, must be listed in `cache.serializable_classes`. Add them to the feature's `options()`:
 
 ```php
 'statamic.serializable_classes' => [Product::class],
