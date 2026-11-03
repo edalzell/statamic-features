@@ -24,7 +24,7 @@ This package is a laravel-features [extension](https://github.com/edalzell/larav
 | `routes/cp.php` | Control panel routes |
 | `routes/actions.php` | Action routes, prefixed with the feature's slug: `/!/my-feature/...` |
 
-Routes go through Statamic because `Route::statamic()` only exists once it has booted, after a feature's route files load. The provider sets these three as `features.route_groups` entries for every feature; override `routeGroups()` on one feature's provider to change them for that feature. Other route files keep the groups laravel-features gives them.
+Routes go through Statamic because `Route::statamic()` only exists once it has booted, after a feature's route files load. The extension supplies these three route groups for every feature; override `routeGroups()` on one feature's provider to change them for that feature. Other route files keep the groups laravel-features gives them.
 
 ## Control panel assets
 

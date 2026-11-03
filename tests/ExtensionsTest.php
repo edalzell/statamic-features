@@ -188,6 +188,21 @@ it('fails loudly when an asset named in options is missing', function () {
     (new MissingAssetServiceProvider(app()))->boot();
 })->throws(RuntimeException::class, 'does not exist');
 
+it('loads a plain feature\'s routes/web.php as Statamic web routes', function () {
+    expect(featureRoute('bare.web')?->gatherMiddleware())->toContain('statamic-routes');
+});
+
+it('loads a plain feature\'s routes/cp.php as control panel routes, with $router available', function () {
+    $route = featureRoute('statamic.cp.bare.cp');
+
+    expect($route?->uri())->toBe('cp/bare-cp')
+        ->and($route?->gatherMiddleware())->toContain('statamic.cp.authenticated');
+});
+
+it('loads a plain feature\'s routes/actions.php prefixed with its slug', function () {
+    expect(featureRoute('statamic.bare.ping')?->uri())->toBe('!/bare/ping');
+});
+
 class ImpostorServiceProvider extends Sample\ServiceProvider
 {
     protected function featuresPath(): string
