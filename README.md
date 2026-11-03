@@ -23,11 +23,9 @@ This package is a laravel-features [extension](https://github.com/edalzell/larav
 | `routes/cp.php` | Control panel routes |
 | `routes/actions.php` | Action routes, prefixed with the feature's slug: `/!/my-feature/...` |
 
-Routes go through Statamic because `Route::statamic()` only exists once it has booted, after a feature's route files load. The extension supplies these three route groups for every feature; override `routeGroups()` on one feature's provider to change them for that feature. Other route files keep the groups laravel-features gives them.
+To change how a feature's route files load, override `routeGroups()` on its provider with the `web`, `cp` or `actions` key, as laravel-features [documents](https://github.com/edalzell/laravel-features#route-groups).
 
 Everything above is keyed by the feature's slug, so two features with the same name can't both be loaded; the second throws.
-
-Settings blueprints aren't handled per feature — those stay with the addon or site that hosts it.
 
 ## Control panel assets
 
