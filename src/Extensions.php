@@ -88,9 +88,8 @@ class Extensions extends Extension
     }
 
     /**
-     * Statamic mounts an addon's web, control panel and action routes itself,
-     * and `Route::statamic()` only exists once it has booted, so a feature's go
-     * through the same door rather than into a plain route group.
+     * Through Statamic, as an addon's are: `Route::statamic()` doesn't exist
+     * until it has booted.
      *
      * @return array<string, Closure>
      */
