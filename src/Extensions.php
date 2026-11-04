@@ -166,12 +166,12 @@ class Extensions extends Extension
     {
         $router = $features->app()->make(Router::class);
 
-        collect($features->option('statamic.middleware_groups', []))
+        collect($this->middlewareGroups($features, 'statamic.middleware_groups'))
             ->each(fn (array $middleware, string $group) => collect($middleware)
                 ->each(fn (string $class) => $router->pushMiddlewareToGroup($group, $class)));
 
         // Reversed, so the group ends up in the order they are listed.
-        collect($features->option('statamic.prepend_middleware_groups', []))
+        collect($this->middlewareGroups($features, 'statamic.prepend_middleware_groups'))
             ->each(fn (array $middleware, string $group) => collect($middleware)
                 ->reverse()
                 ->each(fn (string $class) => $router->prependMiddlewareToGroup($group, $class)));
@@ -261,6 +261,14 @@ class Extensions extends Extension
     private function loadWebRoutes(string $path): void
     {
         Statamic::pushWebRoutes(fn () => Route::group([], $path));
+    }
+
+    /**
+     * @return array<string, array<int, class-string>>
+     */
+    private function middlewareGroups(Features $features, string $option): array
+    {
+        return $features->option($option, []);
     }
 
     private function publicPath(Features $features, string $path): string
