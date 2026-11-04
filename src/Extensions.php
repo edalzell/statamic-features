@@ -5,6 +5,7 @@ namespace Edalzell\StatamicFeatures;
 use Edalzell\Features\Extension;
 use Edalzell\Features\Features;
 use Illuminate\Console\Command;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
@@ -69,6 +70,7 @@ class Extensions extends Extension
             ->bootBlueprints($features)
             ->bootExtensions($features)
             ->bootFieldsets($features)
+            ->bootMiddlewareGroups($features)
             ->bootSubscribers($features)
             ->bootAssets($features)
             ->bootUpdateScripts($features);
@@ -160,6 +162,23 @@ class Extensions extends Extension
         return $this;
     }
 
+    private function bootMiddlewareGroups(Features $features): static
+    {
+        $router = $features->app()->make(Router::class);
+
+        collect($this->middlewareGroups($features, 'statamic.middleware_groups'))
+            ->each(fn (array $middleware, string $group) => collect($middleware)
+                ->each(fn (string $class) => $router->pushMiddlewareToGroup($group, $class)));
+
+        // Reversed, so the group ends up in the order they are listed.
+        collect($this->middlewareGroups($features, 'statamic.prepend_middleware_groups'))
+            ->each(fn (array $middleware, string $group) => collect($middleware)
+                ->reverse()
+                ->each(fn (string $class) => $router->prependMiddlewareToGroup($group, $class)));
+
+        return $this;
+    }
+
     private function bootSerializableClasses(Features $features): static
     {
         $existing = config('cache.serializable_classes');
@@ -242,6 +261,14 @@ class Extensions extends Extension
     private function loadWebRoutes(string $path): void
     {
         Statamic::pushWebRoutes(fn () => Route::group([], $path));
+    }
+
+    /**
+     * @return array<string, array<int, class-string>>
+     */
+    private function middlewareGroups(Features $features, string $option): array
+    {
+        return $features->option($option, []);
     }
 
     private function publicPath(Features $features, string $path): string
