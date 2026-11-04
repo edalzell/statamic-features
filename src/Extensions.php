@@ -5,6 +5,7 @@ namespace Edalzell\StatamicFeatures;
 use Edalzell\Features\Extension;
 use Edalzell\Features\Features;
 use Illuminate\Console\Command;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
@@ -69,6 +70,7 @@ class Extensions extends Extension
             ->bootBlueprints($features)
             ->bootExtensions($features)
             ->bootFieldsets($features)
+            ->bootMiddlewareGroups($features)
             ->bootSubscribers($features)
             ->bootAssets($features)
             ->bootUpdateScripts($features);
@@ -156,6 +158,23 @@ class Extensions extends Extension
         if (File::isDirectory($path = $features->pathTo('resources/fieldsets'))) {
             Fieldset::addNamespace($features->slug(), $path);
         }
+
+        return $this;
+    }
+
+    private function bootMiddlewareGroups(Features $features): static
+    {
+        $router = $features->app()->make(Router::class);
+
+        collect($features->option('statamic.middleware_groups', []))
+            ->each(fn (array $middleware, string $group) => collect($middleware)
+                ->each(fn (string $class) => $router->pushMiddlewareToGroup($group, $class)));
+
+        // Reversed, so the group ends up in the order they are listed.
+        collect($features->option('statamic.prepend_middleware_groups', []))
+            ->each(fn (array $middleware, string $group) => collect($middleware)
+                ->reverse()
+                ->each(fn (string $class) => $router->prependMiddlewareToGroup($group, $class)));
 
         return $this;
     }
