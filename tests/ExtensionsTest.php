@@ -20,6 +20,7 @@ use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Tags\SampleTag;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\UpdateScripts\SampleScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Widgets\SampleWidget;
 use Illuminate\Console\Command;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Statamic\Actions\Action;
@@ -28,6 +29,7 @@ use Statamic\Dictionaries\Dictionary;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Fieldset;
 use Statamic\Fields\Fieldtype;
+use Statamic\Http\Middleware\StacheLock;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
 use Statamic\Statamic;
@@ -173,6 +175,18 @@ it('leaves serializable classes alone when everything is allowed', function (?bo
 
     expect(config('cache.serializable_classes'))->toBe($allowed);
 })->with([null, true]);
+
+it('adds a feature\'s middleware to a group once Statamic has created it', function () {
+    app()->instance('router', $router = new Router(app('events'), app()));
+
+    (new Options\ServiceProvider(app()))->boot();
+
+    $router->pushMiddlewareToGroup('statamic.web', StacheLock::class);
+    Statamic::runBootedCallbacks();
+
+    expect($router->getMiddlewareGroups()['statamic.web'])
+        ->toBe([Options\First::class, Options\Second::class, StacheLock::class, Options\Last::class]);
+});
 
 it('subscribes a feature\'s subscribers', function () {
     expect(Event::hasListeners('bare.subscribed'))->toBeTrue();

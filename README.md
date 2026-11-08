@@ -50,6 +50,15 @@ protected function options(): array
 }
 ```
 
+## Middleware groups
+
+Add middleware to a group the way an addon's `$middlewareGroups` does, from the feature's `options()`. `statamic.middleware_groups` adds to the end of a group, `statamic.prepend_middleware_groups` to the start, keeping the order you list them in:
+
+```php
+'statamic.middleware_groups' => ['web' => [TrackVisits::class]],
+'statamic.prepend_middleware_groups' => ['statamic.web' => [HandleNotFound::class]],
+```
+
 ## Serializable classes
 
 Classes stored in the cache, must be listed in `cache.serializable_classes`. Add them to the feature's `options()`:

@@ -12,6 +12,8 @@ class ServiceProvider extends FeatureServiceProvider
         $sample = dirname(__DIR__, 2).'/Sample/resources/cp';
 
         return [
+            'statamic.middleware_groups' => ['statamic.web' => [Last::class]],
+            'statamic.prepend_middleware_groups' => ['statamic.web' => [First::class, Second::class]],
             'statamic.publishables' => ["{$sample}/img/logo.svg" => 'logo.svg'],
             'statamic.scripts' => ["{$sample}/js/cp.js"],
             'statamic.serializable_classes' => [self::class],
