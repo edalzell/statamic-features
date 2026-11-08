@@ -58,6 +58,8 @@ class Extensions extends Extension
         $this->bootSerializableClasses($features);
 
         $features->app()->booted(fn () => $this->bootFeature($features));
+
+        Statamic::booted(fn () => $this->bootMiddlewareGroups($features));
     }
 
     public function bootFeature(Features $features): void
@@ -70,7 +72,6 @@ class Extensions extends Extension
             ->bootBlueprints($features)
             ->bootExtensions($features)
             ->bootFieldsets($features)
-            ->bootMiddlewareGroups($features)
             ->bootSubscribers($features)
             ->bootAssets($features)
             ->bootUpdateScripts($features);

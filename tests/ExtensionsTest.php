@@ -29,6 +29,7 @@ use Statamic\Dictionaries\Dictionary;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Fieldset;
 use Statamic\Fields\Fieldtype;
+use Statamic\Http\Middleware\StacheLock;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
 use Statamic\Statamic;
@@ -175,15 +176,16 @@ it('leaves serializable classes alone when everything is allowed', function (?bo
     expect(config('cache.serializable_classes'))->toBe($allowed);
 })->with([null, true]);
 
-it('adds a feature\'s middleware to a group, prepended or pushed', function () {
-    $router = app(Router::class);
-    $router->pushMiddlewareToGroup('web', 'Existing');
+it('adds a feature\'s middleware to a group once Statamic has created it', function () {
+    app()->instance('router', $router = new Router(app('events'), app()));
 
     (new Options\ServiceProvider(app()))->boot();
 
-    expect($router->getMiddlewareGroups()['web'])->toContain('Existing')
-        ->and(array_slice($router->getMiddlewareGroups()['web'], 0, 2))->toBe([Options\First::class, Options\Second::class])
-        ->and(last($router->getMiddlewareGroups()['web']))->toBe(Options\Last::class);
+    $router->pushMiddlewareToGroup('statamic.web', StacheLock::class);
+    Statamic::runBootedCallbacks();
+
+    expect($router->getMiddlewareGroups()['statamic.web'])
+        ->toBe([Options\First::class, Options\Second::class, StacheLock::class, Options\Last::class]);
 });
 
 it('subscribes a feature\'s subscribers', function () {

@@ -2,6 +2,7 @@
 
 namespace Edalzell\StatamicFeatures\Tests;
 
+use Closure;
 use Edalzell\Features\ServiceProvider as FeaturesServiceProvider;
 use Edalzell\StatamicFeatures\ServiceProvider;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Addon\Features\Owned;
@@ -58,5 +59,13 @@ class TestCase extends Orchestra
             Owned\ServiceProvider::class,
             Sample\ServiceProvider::class,
         ];
+    }
+
+    protected function tearDown(): void
+    {
+        // Callbacks registered after Statamic booted would otherwise run in the next test's app.
+        Closure::bind(fn () => static::$bootedCallbacks = [], null, Statamic::class)();
+
+        parent::tearDown();
     }
 }
