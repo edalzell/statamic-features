@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.1.0 - 2026-11-08
+
+### 🚀 New
+
+- Allow a feature to register middleware groups [@marcorieser](https://github.com/marcorieser) (#23)
+
 ## v2.0.0 - 2026-11-03
 
 ### ⚠️ Breaking
