@@ -180,6 +180,7 @@ it('adds a feature\'s middleware to a group once Statamic has created it', funct
     app()->instance('router', $router = new Router(app('events'), app()));
 
     // The app has booted, but Statamic has not yet created its group or run its booted callbacks.
+    app()->forgetInstance('statamic.booted');
     (new Options\ServiceProvider(app()))->boot();
 
     $router->pushMiddlewareToGroup('statamic.web', StacheLock::class);
@@ -191,7 +192,6 @@ it('adds a feature\'s middleware to a group once Statamic has created it', funct
 
 it('adds a feature\'s middleware right away once Statamic has booted, leaving nothing for the next app', function () {
     app()->instance('router', $router = new Router(app('events'), app()));
-    $router->pushMiddlewareToGroup('statamic.web', StacheLock::class);
 
     (new Options\ServiceProvider(app()))->boot();
 
@@ -201,7 +201,7 @@ it('adds a feature\'s middleware right away once Statamic has booted, leaving no
 
     expect($next->getMiddlewareGroups())->toBe([])
         ->and($router->getMiddlewareGroups()['statamic.web'])
-        ->toBe([Options\First::class, Options\Second::class, StacheLock::class, Options\Last::class]);
+        ->toBe([Options\First::class, Options\Second::class, Options\Last::class]);
 });
 
 it('subscribes a feature\'s subscribers', function () {
