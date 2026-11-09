@@ -5,6 +5,7 @@ namespace Edalzell\StatamicFeatures;
 use Edalzell\Features\Extension;
 use Edalzell\Features\Features;
 use Illuminate\Console\Command;
+use Illuminate\Foundation\Application;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -51,15 +52,20 @@ class Extensions extends Extension
     private array $booted = [];
 
     /**
-     * Deferred until every provider has booted
+     * Deferred until every provider has booted. Statamic runs its booted callbacks once, while the app boots,
+     * so a feature booted later adds its middleware right away instead of leaving a callback for the next app.
      */
     public function boot(Features $features): void
     {
         $this->bootSerializableClasses($features);
 
-        $features->app()->booted(fn () => $this->bootFeature($features));
+        $app = $features->app();
 
-        Statamic::booted(fn () => $this->bootMiddlewareGroups($features));
+        $app->booted(fn () => $this->bootFeature($features));
+
+        $app instanceof Application && $app->isBooted()
+            ? $this->bootMiddlewareGroups($features)
+            : Statamic::booted(fn () => $this->bootMiddlewareGroups($features));
     }
 
     public function bootFeature(Features $features): void
