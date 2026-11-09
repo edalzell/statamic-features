@@ -5,7 +5,6 @@ namespace Edalzell\StatamicFeatures;
 use Edalzell\Features\Extension;
 use Edalzell\Features\Features;
 use Illuminate\Console\Command;
-use Illuminate\Foundation\Application;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -22,6 +21,7 @@ use Statamic\Facades\Addon as Addons;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Fieldset;
 use Statamic\Fields\Fieldtype;
+use Statamic\Http\Middleware\StacheLock;
 use Statamic\Modifiers\Modifier;
 use Statamic\Query\Scopes\Scope;
 use Statamic\Statamic;
@@ -59,11 +59,9 @@ class Extensions extends Extension
     {
         $this->bootSerializableClasses($features);
 
-        $app = $features->app();
+        $features->app()->booted(fn () => $this->bootFeature($features));
 
-        $app->booted(fn () => $this->bootFeature($features));
-
-        $app instanceof Application && $app->isBooted()
+        $this->statamicHasBooted($features)
             ? $this->bootMiddlewareGroups($features)
             : Statamic::booted(fn () => $this->bootMiddlewareGroups($features));
     }
@@ -349,6 +347,18 @@ class Extensions extends Extension
     private function scripts(Features $features): array
     {
         return $features->option('statamic.scripts') ?? File::glob($features->pathTo('resources/cp/js/*.js'));
+    }
+
+    /**
+     * Whether Statamic has run its booted callbacks. `$app->isBooted()` is already true while they are
+     * still pending, so until Statamic exposes this (https://github.com/statamic/cms/pull/15823) the
+     * middleware Statamic adds to `statamic.web` right before running them stands in.
+     */
+    private function statamicHasBooted(Features $features): bool
+    {
+        $groups = $features->app()->make(Router::class)->getMiddlewareGroups();
+
+        return in_array(StacheLock::class, $groups['statamic.web'] ?? []);
     }
 
     /**
