@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.1.1 - 2026-11-10
+
+### 🐛 Fixed
+
+- Add middleware right away to an app that has booted [@marcorieser](https://github.com/marcorieser) (#25)
+
+### 🧰 Maintenance
+
+- Label pull requests from forks [@marcorieser](https://github.com/marcorieser) (#26)
+
 ## v2.1.0 - 2026-11-08
 
 ### 🚀 New
