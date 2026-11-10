@@ -51,7 +51,8 @@ class Extensions extends Extension
     private array $booted = [];
 
     /**
-     * Deferred until every provider has booted
+     * Deferred until every provider has booted. Statamic runs its booted callbacks once, while the app boots,
+     * so a feature booted later adds its middleware right away instead of leaving a callback for the next app.
      */
     public function boot(Features $features): void
     {
@@ -59,7 +60,9 @@ class Extensions extends Extension
 
         $features->app()->booted(fn () => $this->bootFeature($features));
 
-        Statamic::booted(fn () => $this->bootMiddlewareGroups($features));
+        $features->app()->bound('statamic.booted')
+            ? $this->bootMiddlewareGroups($features)
+            : Statamic::booted(fn () => $this->bootMiddlewareGroups($features));
     }
 
     public function bootFeature(Features $features): void

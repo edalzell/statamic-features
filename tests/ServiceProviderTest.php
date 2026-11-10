@@ -11,3 +11,7 @@ it('tags the extension', function () {
 it('resolves one Extensions instance, so a feature can be remembered', function () {
     expect(app(Extensions::class))->toBe(app(Extensions::class));
 });
+
+it('records that Statamic has booted', function () {
+    expect(app()->bound('statamic.booted'))->toBeTrue();
+});
