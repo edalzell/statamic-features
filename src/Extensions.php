@@ -60,7 +60,7 @@ class Extensions extends Extension
 
         $features->app()->booted(fn () => $this->bootFeature($features));
 
-        $features->app()->bound('statamic.booted')
+        Statamic::hasBooted()
             ? $this->bootMiddlewareGroups($features)
             : Statamic::booted(fn () => $this->bootMiddlewareGroups($features));
     }
