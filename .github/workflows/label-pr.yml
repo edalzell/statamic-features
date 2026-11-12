@@ -4,12 +4,8 @@ on:
     types: [opened]
 
 jobs:
-  pr-labeler:
-    runs-on: ubuntu-latest
+  label:
+    uses: edalzell/github-workflows/.github/workflows/label-pr.yml@dca0e67e0416ec4cb4bf1358dd09c640e077386b # v1.5.2
     permissions:
       contents: read
       pull-requests: write
-    steps:
-      - uses: TimonVS/pr-labeler-action@f9c084306ce8b3f488a8f3ee1ccedc6da131d1af # v5.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
