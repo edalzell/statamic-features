@@ -111,6 +111,7 @@ class Extensions extends Extension
             ->bootBlueprints($feature)
             ->bootExtensions($feature)
             ->bootFieldsets($feature)
+            ->bootQueryScopes($feature)
             ->bootAssets($feature)
             ->bootUpdateScripts($feature);
     }
@@ -137,6 +138,15 @@ class Extensions extends Extension
             ->each(fn (array $middleware, string $group) => collect($middleware)
                 ->reverse()
                 ->each(fn (string $class) => $router->prependMiddlewareToGroup($group, $class)));
+
+        return $this;
+    }
+
+    private function bootQueryScopes(Feature $feature): static
+    {
+        collect($feature->queryScopes())
+            ->each(fn (array $scopes, string $repository) => collect($scopes)
+                ->each(fn (string $scope) => $repository::allowQueryScope($scope)));
 
         return $this;
     }
