@@ -26,6 +26,7 @@ use Statamic\Actions\Action;
 use Statamic\Addons\Manifest;
 use Statamic\Dictionaries\Dictionary;
 use Statamic\Facades\Blueprint;
+use Statamic\Facades\Entry;
 use Statamic\Facades\Fieldset;
 use Statamic\Fields\Fieldtype;
 use Statamic\Http\Middleware\StacheLock;
@@ -201,6 +202,10 @@ it('adds a feature\'s middleware right away once Statamic has booted, leaving no
     expect($next->getMiddlewareGroups())->toBe([])
         ->and($router->getMiddlewareGroups()['statamic.web'])
         ->toBe([Options\First::class, Options\Second::class, Options\Last::class]);
+});
+
+it('allows a feature\'s query scopes on a repository', function () {
+    expect(Entry::query()->canApplyScope('sampleScope'))->toBeTrue();
 });
 
 it('scans one level deep, like Statamic', function () {

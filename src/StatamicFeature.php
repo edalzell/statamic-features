@@ -123,6 +123,14 @@ final class StatamicFeature
             ->all();
     }
 
+    /**
+     * @return array<class-string, array<int, class-string<Scope>>>
+     */
+    public function queryScopes(): array
+    {
+        return $this->option('statamic.query_scopes', []);
+    }
+
     public function rootPath(): string
     {
         return $this->features->rootPath();
