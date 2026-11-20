@@ -58,6 +58,15 @@ Add middleware to a group the way an addon's `$middlewareGroups` does, from the 
 'statamic.prepend_middleware_groups' => ['statamic.web' => [HandleNotFound::class]],
 ```
 
+## Query scopes
+
+A scope under `src/Scopes` is registered, but a repository only accepts it as a query method once `allowQueryScope()` says so. Name the repositories on the scope with `#[AllowOn]`, and the method is named after the scope's handle:
+
+```php
+#[AllowOn(Entry::class, Term::class)]
+class NotSold extends Scope // Entry::query()->notSold()
+```
+
 ## Serializable classes
 
 Classes stored in the cache, must be listed in `cache.serializable_classes`. Add them to the feature's `options()`:

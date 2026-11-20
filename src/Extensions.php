@@ -4,15 +4,19 @@ namespace Edalzell\StatamicFeatures;
 
 use Edalzell\Features\Extension;
 use Edalzell\Features\Features;
+use Edalzell\StatamicFeatures\Attributes\AllowOn;
 use Illuminate\Console\Command;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use ReflectionAttribute;
+use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Fieldset;
+use Statamic\Query\Scopes\Scope;
 use Statamic\Statamic;
 
 class Extensions extends Extension
@@ -47,6 +51,7 @@ class Extensions extends Extension
             ->bootBlueprints($feature)
             ->bootExtensions($feature)
             ->bootFieldsets($feature)
+            ->bootQueryScopes($feature)
             ->bootAssets($feature)
             ->bootUpdateScripts($feature);
     }
@@ -58,6 +63,17 @@ class Extensions extends Extension
             'cp' => $this->loadCpRoutes(...),
             'web' => $this->loadWebRoutes(...),
         ];
+    }
+
+    /**
+     * @param  class-string<Scope>  $scope
+     * @return array<int, class-string>
+     */
+    private function allowedOn(string $scope): array
+    {
+        return collect((new ReflectionClass($scope))->getAttributes(AllowOn::class))
+            ->flatMap(fn (ReflectionAttribute $attribute) => $attribute->newInstance()->repositories)
+            ->all();
     }
 
     private function alreadyBooted(StatamicFeature $feature): bool
@@ -137,6 +153,14 @@ class Extensions extends Extension
             ->each(fn (array $middleware, string $group) => collect($middleware)
                 ->reverse()
                 ->each(fn (string $class) => $router->prependMiddlewareToGroup($group, $class)));
+
+        return $this;
+    }
+
+    private function bootQueryScopes(StatamicFeature $feature): static
+    {
+        $feature->scopes()->each(fn (string $scope) => collect($this->allowedOn($scope))
+            ->each(fn (string $repository) => $repository::allowQueryScope($scope)));
 
         return $this;
     }

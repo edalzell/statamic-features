@@ -139,6 +139,20 @@ final class StatamicFeature
     /**
      * @return array<int, class-string>
      */
+    /**
+     * @return Collection<int, class-string<Scope>>
+     */
+    public function scopes(): Collection
+    {
+        return collect(self::EXTENSIONS)
+            ->filter(fn (string $type) => $type === Scope::class)
+            ->keys()
+            ->flatMap(fn (string $folder) => $this->classesIn($folder, Scope::class));
+    }
+
+    /**
+     * @return array<int, class-string>
+     */
     public function serializableClasses(): array
     {
         return $this->option('statamic.serializable_classes', []);
