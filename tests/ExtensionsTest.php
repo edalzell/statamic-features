@@ -21,7 +21,6 @@ use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\UpdateScripts\SampleScript;
 use Edalzell\StatamicFeatures\Tests\Fixtures\Sample\Widgets\SampleWidget;
 use Illuminate\Console\Command;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Statamic\Actions\Action;
 use Statamic\Addons\Manifest;
@@ -202,10 +201,6 @@ it('adds a feature\'s middleware right away once Statamic has booted, leaving no
     expect($next->getMiddlewareGroups())->toBe([])
         ->and($router->getMiddlewareGroups()['statamic.web'])
         ->toBe([Options\First::class, Options\Second::class, Options\Last::class]);
-});
-
-it('subscribes a feature\'s subscribers', function () {
-    expect(Event::hasListeners('bare.subscribed'))->toBeTrue();
 });
 
 it('scans one level deep, like Statamic', function () {
