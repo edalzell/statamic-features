@@ -60,10 +60,11 @@ Add middleware to a group the way an addon's `$middlewareGroups` does, from the 
 
 ## Query scopes
 
-A scope under `src/Scopes` is registered, but a repository only accepts it as a query method once `allowQueryScope()` says so. List the scopes per repository facade in the feature's `options()`, and the method is named after the scope's handle:
+A scope under `src/Scopes` is registered, but a repository only accepts it as a query method once `allowQueryScope()` says so. Name the repositories on the scope with `#[AllowOn]`, and the method is named after the scope's handle:
 
 ```php
-'statamic.query_scopes' => [Entry::class => [NotSold::class]], // Entry::query()->notSold()
+#[AllowOn(Entry::class, Term::class)]
+class NotSold extends Scope // Entry::query()->notSold()
 ```
 
 ## Serializable classes

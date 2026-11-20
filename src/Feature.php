@@ -104,14 +104,6 @@ final class Feature
             ->all();
     }
 
-    /**
-     * @return array<class-string, array<int, class-string<Scope>>>
-     */
-    public function queryScopes(): array
-    {
-        return $this->option('statamic.query_scopes', []);
-    }
-
     public function rootPath(): string
     {
         return $this->laravelFeature->rootPath();
@@ -123,6 +115,20 @@ final class Feature
     public function scripts(): array
     {
         return $this->option('statamic.scripts') ?? File::glob($this->pathTo('resources/cp/js/*.js'));
+    }
+
+    /**
+     * @return array<int, class-string>
+     */
+    /**
+     * @return Collection<int, class-string<Scope>>
+     */
+    public function scopes(): Collection
+    {
+        return collect(self::EXTENSIONS)
+            ->filter(fn (string $type) => $type === Scope::class)
+            ->keys()
+            ->flatMap(fn (string $folder) => $this->classesIn($folder, Scope::class));
     }
 
     /**

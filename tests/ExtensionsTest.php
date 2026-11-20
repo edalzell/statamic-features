@@ -204,7 +204,7 @@ it('adds a feature\'s middleware right away once Statamic has booted, leaving no
         ->toBe([Options\First::class, Options\Second::class, Options\Last::class]);
 });
 
-it('allows a feature\'s query scopes on a repository', function () {
+it('allows a scope on the repositories its attribute names', function () {
     expect(Entry::query()->canApplyScope('sampleScope'))->toBeTrue();
 });
 
