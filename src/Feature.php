@@ -41,6 +41,9 @@ final class Feature
         'Widgets' => Widget::class,
     ];
 
+    /** @var Collection<int, class-string>|null */
+    private ?Collection $extensions = null;
+
     public function __construct(private readonly LaravelFeature $laravelFeature) {}
 
     /**
@@ -67,7 +70,8 @@ final class Feature
      */
     public function extensions(): Collection
     {
-        return collect(self::EXTENSIONS)->flatMap(fn (string $type, string $folder) => $this->classesIn($folder, $type));
+        return $this->extensions ??= collect(self::EXTENSIONS)
+            ->flatMap(fn (string $type, string $folder) => $this->classesIn($folder, $type));
     }
 
     /**
@@ -110,25 +114,19 @@ final class Feature
     }
 
     /**
+     * @return Collection<int, class-string<Scope>>
+     */
+    public function scopes(): Collection
+    {
+        return $this->extensions()->filter(fn (string $class) => is_a($class, Scope::class, true));
+    }
+
+    /**
      * @return array<int, string>
      */
     public function scripts(): array
     {
         return $this->option('statamic.scripts') ?? File::glob($this->pathTo('resources/cp/js/*.js'));
-    }
-
-    /**
-     * @return array<int, class-string>
-     */
-    /**
-     * @return Collection<int, class-string<Scope>>
-     */
-    public function scopes(): Collection
-    {
-        return collect(self::EXTENSIONS)
-            ->filter(fn (string $type) => $type === Scope::class)
-            ->keys()
-            ->flatMap(fn (string $folder) => $this->classesIn($folder, Scope::class));
     }
 
     /**

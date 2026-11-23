@@ -7,7 +7,7 @@ use Attribute;
 /**
  * The repositories a query scope is allowed on, as `Entry::allowQueryScope()` would.
  */
-#[Attribute(Attribute::TARGET_CLASS)]
+#[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
 class AllowOn
 {
     /** @var array<int, class-string> */
