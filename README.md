@@ -15,7 +15,6 @@ This package is a laravel-features [extension](https://github.com/edalzell/larav
 | Feature path | What happens |
 |---|---|
 | `src/Actions`, `src/Dictionaries`, `src/Fieldtypes`, `src/Modifiers`, `src/Scopes`, `src/Query/Scopes`, `src/Query/Scopes/Filters`, `src/Tags`, `src/Widgets` | Every concrete class of the matching type is registered. One level deep, as Statamic scans an addon |
-| `src/Subscribers` | Every class is passed to `Event::subscribe()` |
 | `src/UpdateScripts` | Registered against the addon the feature lives in. Skipped for a feature in a site, which has no package version to update from |
 | `resources/blueprints` | Blueprint namespace, named after the feature's slug: `my-feature::thing` |
 | `resources/fieldsets` | Fieldset namespace, named after the feature's slug: `my-feature::common` |

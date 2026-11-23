@@ -17,7 +17,7 @@
     "homepage": "https://github.com/edalzell/statamic-features",
     "require": {
         "php": "^8.3",
-        "edalzell/laravel-features": "^2.0",
+        "edalzell/laravel-features": "^2.1",
         "statamic/cms": "^6.41"
     },
     "require-dev": {

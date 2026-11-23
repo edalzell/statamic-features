@@ -8,7 +8,6 @@ use Illuminate\Console\Command;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use ReflectionMethod;
@@ -75,7 +74,6 @@ class Extensions extends Extension
             ->bootBlueprints($features)
             ->bootExtensions($features)
             ->bootFieldsets($features)
-            ->bootSubscribers($features)
             ->bootAssets($features)
             ->bootUpdateScripts($features);
     }
@@ -197,13 +195,6 @@ class Extensions extends Extension
                 $features->option('statamic.serializable_classes', []),
             ),
         ]);
-
-        return $this;
-    }
-
-    private function bootSubscribers(Features $features): static
-    {
-        $this->classesIn($features, 'Subscribers')->each(fn (string $subscriber) => Event::subscribe($subscriber));
 
         return $this;
     }
