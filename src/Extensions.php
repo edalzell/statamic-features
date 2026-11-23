@@ -3,49 +3,20 @@
 namespace Edalzell\StatamicFeatures;
 
 use Edalzell\Features\Extension;
-use Edalzell\Features\Features;
+use Edalzell\Features\Features as LaravelFeature;
 use Illuminate\Console\Command;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use ReflectionMethod;
 use RuntimeException;
-use Statamic\Actions\Action;
-use Statamic\Addons\Addon;
-use Statamic\Addons\Manifest;
-use Statamic\Dictionaries\Dictionary;
-use Statamic\Facades\Addon as Addons;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Fieldset;
-use Statamic\Fields\Fieldtype;
-use Statamic\Modifiers\Modifier;
-use Statamic\Query\Scopes\Scope;
 use Statamic\Statamic;
-use Statamic\Tags\Tags;
-use Statamic\UpdateScripts\UpdateScript;
-use Statamic\Widgets\Widget;
 
 class Extensions extends Extension
 {
-    /**
-     * The folders Statamic scans in an app or addon, relative to `src`.
-     *
-     * @var array<string, class-string>
-     */
-    private const array EXTENSIONS = [
-        'Actions' => Action::class,
-        'Dictionaries' => Dictionary::class,
-        'Fieldtypes' => Fieldtype::class,
-        'Modifiers' => Modifier::class,
-        'Query/Scopes' => Scope::class,
-        'Query/Scopes/Filters' => Scope::class,
-        'Scopes' => Scope::class,
-        'Tags' => Tags::class,
-        'Widgets' => Widget::class,
-    ];
-
     /** @var array<string, string> slug => root path */
     private array $booted = [];
 
@@ -53,29 +24,17 @@ class Extensions extends Extension
      * Deferred until every provider has booted. Statamic runs its booted callbacks once, while the app boots,
      * so a feature booted later adds its middleware right away instead of leaving a callback for the next app.
      */
-    public function boot(Features $features): void
+    public function boot(LaravelFeature $laravelFeature): void
     {
-        $this->bootSerializableClasses($features);
+        $feature = new Feature($laravelFeature);
 
-        $features->app()->booted(fn () => $this->bootFeature($features));
+        $this->bootSerializableClasses($feature);
+
+        $feature->app()->booted(fn () => $this->bootFeature($feature));
 
         Statamic::hasBooted()
-            ? $this->bootMiddlewareGroups($features)
-            : Statamic::booted(fn () => $this->bootMiddlewareGroups($features));
-    }
-
-    public function bootFeature(Features $features): void
-    {
-        if ($this->alreadyBooted($features)) {
-            return;
-        }
-
-        $this
-            ->bootBlueprints($features)
-            ->bootExtensions($features)
-            ->bootFieldsets($features)
-            ->bootAssets($features)
-            ->bootUpdateScripts($features);
+            ? $this->bootMiddlewareGroups($feature)
+            : Statamic::booted(fn () => $this->bootMiddlewareGroups($feature));
     }
 
     public function routeGroups(): array
@@ -87,93 +46,94 @@ class Extensions extends Extension
         ];
     }
 
-    private function addon(Features $features): ?Addon
+    private function alreadyBooted(Feature $feature): bool
     {
-        if (is_null($addon = $this->findAddon($features))) {
-            // Not discovered yet — just installed, inside `statamic:install`.
-            $features->app()->make(Manifest::class)->build();
-            $addon = $this->findAddon($features);
-        }
-
-        return $addon;
-    }
-
-    private function alreadyBooted(Features $features): bool
-    {
-        $path = $this->booted[$slug = $features->slug()] ?? null;
+        $path = $this->booted[$slug = $feature->slug()] ?? null;
 
         throw_if(
-            ! is_null($path) && $path !== $features->rootPath(),
-            new RuntimeException("Features at [{$path}] and [{$features->rootPath()}] both have the slug [{$slug}]."),
+            ! is_null($path) && $path !== $feature->rootPath(),
+            new RuntimeException("Features at [{$path}] and [{$feature->rootPath()}] both have the slug [{$slug}]."),
         );
 
-        $this->booted[$slug] ??= $features->rootPath();
+        $this->booted[$slug] ??= $feature->rootPath();
 
         return ! is_null($path);
     }
 
-    private function bootAssets(Features $features): static
+    private function bootAssets(Feature $feature): static
     {
-        $publishables = $this->publishables($features);
-        $scripts = $this->scripts($features);
-        $stylesheets = $this->stylesheets($features);
-        $vite = $features->option('statamic.vite');
+        $publishables = $feature->publishables();
+        $scripts = $feature->scripts();
+        $stylesheets = $feature->stylesheets();
+        $vite = $feature->vite();
 
         if (! empty($publishables)) {
-            $this->publish($features, array_map(fn (string $to) => $this->publicPath($features, $to), $publishables));
+            $this->publish($feature, array_map(fn (string $to) => $feature->publicPath($to), $publishables));
         }
 
-        collect($scripts)->each(fn (string $path) => Statamic::script($features->slug(), $this->publishAsset($features, $path, 'js')));
-        collect($stylesheets)->each(fn (string $path) => Statamic::style($features->slug(), $this->publishAsset($features, $path, 'css')));
+        collect($scripts)->each(fn (string $path) => Statamic::script($feature->slug(), $this->publishAsset($feature, $path, 'js')));
+        collect($stylesheets)->each(fn (string $path) => Statamic::style($feature->slug(), $this->publishAsset($feature, $path, 'css')));
 
         if (! is_null($vite)) {
-            $this->registerVite($features, $vite);
+            $this->registerVite($feature, $vite);
         }
 
         if (! empty([...$publishables, ...$scripts, ...$stylesheets]) || ! is_null($vite)) {
-            Statamic::afterInstalled(fn (Command $command) => $this->publishAssets($features, $command));
+            Statamic::afterInstalled(fn (Command $command) => $this->publishAssets($feature, $command));
         }
 
         return $this;
     }
 
-    private function bootBlueprints(Features $features): static
+    private function bootBlueprints(Feature $feature): static
     {
-        if (File::isDirectory($path = $features->pathTo('resources/blueprints'))) {
-            Blueprint::addNamespace($features->slug(), $path);
+        if (File::isDirectory($path = $feature->pathTo('resources/blueprints'))) {
+            Blueprint::addNamespace($feature->slug(), $path);
         }
 
         return $this;
     }
 
-    private function bootExtensions(Features $features): static
+    private function bootExtensions(Feature $feature): static
     {
-        collect(self::EXTENSIONS)
-            ->flatMap(fn (string $type, string $folder) => $this->classesIn($features, $folder, $type))
-            ->each(fn (string $extension) => $extension::register());
+        $feature->extensions()->each(fn (string $extension) => $extension::register());
 
         return $this;
     }
 
-    private function bootFieldsets(Features $features): static
+    private function bootFeature(Feature $feature): void
     {
-        if (File::isDirectory($path = $features->pathTo('resources/fieldsets'))) {
-            Fieldset::addNamespace($features->slug(), $path);
+        if ($this->alreadyBooted($feature)) {
+            return;
+        }
+
+        $this
+            ->bootBlueprints($feature)
+            ->bootExtensions($feature)
+            ->bootFieldsets($feature)
+            ->bootAssets($feature)
+            ->bootUpdateScripts($feature);
+    }
+
+    private function bootFieldsets(Feature $feature): static
+    {
+        if (File::isDirectory($path = $feature->pathTo('resources/fieldsets'))) {
+            Fieldset::addNamespace($feature->slug(), $path);
         }
 
         return $this;
     }
 
-    private function bootMiddlewareGroups(Features $features): static
+    private function bootMiddlewareGroups(Feature $feature): static
     {
-        $router = $features->app()->make(Router::class);
+        $router = $feature->app()->make(Router::class);
 
-        collect($this->middlewareGroups($features, 'statamic.middleware_groups'))
+        collect($feature->middlewareGroups('statamic.middleware_groups'))
             ->each(fn (array $middleware, string $group) => collect($middleware)
                 ->each(fn (string $class) => $router->pushMiddlewareToGroup($group, $class)));
 
         // Reversed, so the group ends up in the order they are listed.
-        collect($this->middlewareGroups($features, 'statamic.prepend_middleware_groups'))
+        collect($feature->middlewareGroups('statamic.prepend_middleware_groups'))
             ->each(fn (array $middleware, string $group) => collect($middleware)
                 ->reverse()
                 ->each(fn (string $class) => $router->prependMiddlewareToGroup($group, $class)));
@@ -181,7 +141,7 @@ class Extensions extends Extension
         return $this;
     }
 
-    private function bootSerializableClasses(Features $features): static
+    private function bootSerializableClasses(Feature $feature): static
     {
         $existing = config('cache.serializable_classes');
 
@@ -192,60 +152,27 @@ class Extensions extends Extension
         config([
             'cache.serializable_classes' => array_merge(
                 is_array($existing) ? $existing : [],
-                $features->option('statamic.serializable_classes', []),
+                $feature->serializableClasses(),
             ),
         ]);
 
         return $this;
     }
 
-    private function bootUpdateScripts(Features $features): static
+    private function bootUpdateScripts(Feature $feature): static
     {
-        if (! File::isDirectory($features->pathTo('src/UpdateScripts'))) {
+        if (($scripts = $feature->updateScripts())->isEmpty() || is_null($addon = $feature->addon())) {
             return $this;
         }
 
-        if (is_null($addon = $this->addon($features))) {
-            return $this;
-        }
-
-        $this
-            ->classesIn($features, 'UpdateScripts', UpdateScript::class)
-            ->each(fn (string $script) => $script::register($addon->package()));
+        $scripts->each(fn (string $script) => $script::register($addon->package()));
 
         return $this;
     }
 
-    /**
-     * @param  class-string|null  $type
-     * @return Collection<int, class-string>
-     */
-    private function classesIn(Features $features, string $folder, ?string $type = null): Collection
+    private function loadActionRoutes(string $path, LaravelFeature $laravelFeature): void
     {
-        return $features->classes($folder, $type, depth: 0);
-    }
-
-    /**
-     * @return Collection<int, string>
-     */
-    private function cpDirectories(Features $features): Collection
-    {
-        if (! File::isDirectory($path = $features->pathTo('resources/cp'))) {
-            return collect();
-        }
-
-        return collect(File::directories($path));
-    }
-
-    private function findAddon(Features $features): ?Addon
-    {
-        return Addons::all()
-            ->first(fn (Addon $addon) => str_starts_with($features->rootNamespace(), $addon->namespace().'\\'));
-    }
-
-    private function loadActionRoutes(string $path, Features $features): void
-    {
-        Statamic::pushActionRoutes(fn () => Route::prefix($features->slug())->group($path));
+        Statamic::pushActionRoutes(fn () => Route::prefix($laravelFeature->slug())->group($path));
     }
 
     private function loadCpRoutes(string $path): void
@@ -259,58 +186,34 @@ class Extensions extends Extension
     }
 
     /**
-     * @return array<string, array<int, class-string>>
-     */
-    private function middlewareGroups(Features $features, string $option): array
-    {
-        return $features->option($option, []);
-    }
-
-    private function publicPath(Features $features, string $path): string
-    {
-        return public_path("vendor/{$features->slug()}/{$path}");
-    }
-
-    /**
      * @param  array<string, string>  $paths
      */
-    private function publish(Features $features, array $paths): void
+    private function publish(Feature $feature, array $paths): void
     {
-        (new ReflectionMethod($features->provider(), 'publishes'))->invoke($features->provider(), $paths, $features->slug());
+        (new ReflectionMethod($feature->provider(), 'publishes'))->invoke($feature->provider(), $paths, $feature->slug());
     }
 
-    private function publishAsset(Features $features, string $path, string $folder): string
+    private function publishAsset(Feature $feature, string $path, string $folder): string
     {
         throw_unless(
             is_file($path),
-            new RuntimeException("Asset [{$path}] of feature [{$features->slug()}] does not exist."),
+            new RuntimeException("Asset [{$path}] of feature [{$feature->slug()}] does not exist."),
         );
 
-        $this->publish($features, [$path => $this->publicPath($features, "{$folder}/".basename($path))]);
+        $this->publish($feature, [$path => $feature->publicPath("{$folder}/".basename($path))]);
 
         return basename($path).'?v='.filemtime($path);
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function publishables(Features $features): array
+    private function publishAssets(Feature $feature, Command $command): void
     {
-        return $features->option('statamic.publishables') ?? $this->cpDirectories($features)
-            ->reject(fn (string $directory) => in_array(basename($directory), ['css', 'js']))
-            ->mapWithKeys(fn (string $directory) => [$directory => basename($directory)])
-            ->all();
-    }
-
-    private function publishAssets(Features $features, Command $command): void
-    {
-        $command->call('vendor:publish', ['--force' => true, '--tag' => $features->slug()]);
+        $command->call('vendor:publish', ['--force' => true, '--tag' => $feature->slug()]);
     }
 
     /**
      * @param  array<string, mixed>|string|array<int, string>  $config
      */
-    private function registerVite(Features $features, array|string $config): void
+    private function registerVite(Feature $feature, array|string $config): void
     {
         if (is_string($config) || ! Arr::isAssoc($config)) {
             $config = ['input' => $config];
@@ -318,32 +221,16 @@ class Extensions extends Extension
 
         $publicDirectory = $config['publicDirectory'] ?? 'public';
         $buildDirectory = $config['buildDirectory'] ?? 'build';
-        $slug = $features->slug();
+        $slug = $feature->slug();
 
-        $this->publish($features, [
-            $features->pathTo("{$publicDirectory}/{$buildDirectory}").'/' => public_path("vendor/{$slug}/{$buildDirectory}/"),
+        $this->publish($feature, [
+            $feature->pathTo("{$publicDirectory}/{$buildDirectory}").'/' => public_path("vendor/{$slug}/{$buildDirectory}/"),
         ]);
 
         Statamic::vite($slug, [
-            'hotFile' => $config['hotFile'] ?? $features->pathTo("{$publicDirectory}/hot"),
+            'hotFile' => $config['hotFile'] ?? $feature->pathTo("{$publicDirectory}/hot"),
             'buildDirectory' => "vendor/{$slug}/{$buildDirectory}",
             'input' => $config['input'],
         ]);
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function scripts(Features $features): array
-    {
-        return $features->option('statamic.scripts') ?? File::glob($features->pathTo('resources/cp/js/*.js'));
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function stylesheets(Features $features): array
-    {
-        return $features->option('statamic.stylesheets') ?? File::glob($features->pathTo('resources/cp/css/*.css'));
     }
 }
