@@ -2,7 +2,7 @@
 
 namespace Edalzell\StatamicFeatures;
 
-use Edalzell\Features\Features;
+use Edalzell\Features\Features as LaravelFeature;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
@@ -41,7 +41,7 @@ final class Feature
         'Widgets' => Widget::class,
     ];
 
-    public function __construct(private readonly Features $features) {}
+    public function __construct(private readonly LaravelFeature $laravelFeature) {}
 
     /**
      * The addon the feature lives in, if any.
@@ -59,7 +59,7 @@ final class Feature
 
     public function app(): Application
     {
-        return $this->features->app();
+        return $this->laravelFeature->app();
     }
 
     /**
@@ -68,7 +68,7 @@ final class Feature
      */
     public function classesIn(string $folder, ?string $type = null): Collection
     {
-        return $this->features->classes($folder, $type, depth: 0);
+        return $this->laravelFeature->classes($folder, $type, depth: 0);
     }
 
     /**
@@ -94,17 +94,17 @@ final class Feature
 
     public function option(string $key, mixed $default = null): mixed
     {
-        return $this->features->option($key, $default);
+        return $this->laravelFeature->option($key, $default);
     }
 
     public function pathTo(string $relative = ''): string
     {
-        return $this->features->pathTo($relative);
+        return $this->laravelFeature->pathTo($relative);
     }
 
     public function provider(): ServiceProvider
     {
-        return $this->features->provider();
+        return $this->laravelFeature->provider();
     }
 
     public function publicPath(string $path): string
@@ -125,7 +125,7 @@ final class Feature
 
     public function rootPath(): string
     {
-        return $this->features->rootPath();
+        return $this->laravelFeature->rootPath();
     }
 
     /**
@@ -146,7 +146,7 @@ final class Feature
 
     public function slug(): string
     {
-        return $this->features->slug();
+        return $this->laravelFeature->slug();
     }
 
     /**
@@ -188,6 +188,6 @@ final class Feature
     private function findAddon(): ?Addon
     {
         return Addons::all()
-            ->first(fn (Addon $addon) => str_starts_with($this->features->rootNamespace(), $addon->namespace().'\\'));
+            ->first(fn (Addon $addon) => str_starts_with($this->laravelFeature->rootNamespace(), $addon->namespace().'\\'));
     }
 }
