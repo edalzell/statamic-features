@@ -41,6 +41,9 @@ final class Feature
         'Widgets' => Widget::class,
     ];
 
+    /** @var Collection<int, class-string>|null */
+    private ?Collection $extensions = null;
+
     public function __construct(private readonly LaravelFeature $laravelFeature) {}
 
     /**
@@ -67,7 +70,8 @@ final class Feature
      */
     public function extensions(): Collection
     {
-        return collect(self::EXTENSIONS)->flatMap(fn (string $type, string $folder) => $this->classesIn($folder, $type));
+        return $this->extensions ??= collect(self::EXTENSIONS)
+            ->flatMap(fn (string $type, string $folder) => $this->classesIn($folder, $type));
     }
 
     /**
@@ -107,6 +111,14 @@ final class Feature
     public function rootPath(): string
     {
         return $this->laravelFeature->rootPath();
+    }
+
+    /**
+     * @return Collection<int, class-string<Scope>>
+     */
+    public function scopes(): Collection
+    {
+        return $this->extensions()->filter(fn (string $class) => is_a($class, Scope::class, true));
     }
 
     /**

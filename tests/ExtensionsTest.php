@@ -26,7 +26,9 @@ use Statamic\Actions\Action;
 use Statamic\Addons\Manifest;
 use Statamic\Dictionaries\Dictionary;
 use Statamic\Facades\Blueprint;
+use Statamic\Facades\Entry;
 use Statamic\Facades\Fieldset;
+use Statamic\Facades\Term;
 use Statamic\Fields\Fieldtype;
 use Statamic\Http\Middleware\StacheLock;
 use Statamic\Modifiers\Modifier;
@@ -201,6 +203,20 @@ it('adds a feature\'s middleware right away once Statamic has booted, leaving no
     expect($next->getMiddlewareGroups())->toBe([])
         ->and($router->getMiddlewareGroups()['statamic.web'])
         ->toBe([Options\First::class, Options\Second::class, Options\Last::class]);
+});
+
+it('allows a scope on the repositories its attribute names', function () {
+    expect(Entry::query()->canApplyScope('sampleScope'))->toBeTrue()
+        ->and(Term::query()->canApplyScope('sampleScope'))->toBeFalse();
+});
+
+it('allows a scope on every repository of a repeated attribute', function () {
+    expect(Entry::query()->canApplyScope('repeatedScope'))->toBeTrue()
+        ->and(Term::query()->canApplyScope('repeatedScope'))->toBeTrue();
+});
+
+it('wont allow a scope without the attribute', function () {
+    expect(Entry::query()->canApplyScope('sampleFilter'))->toBeFalse();
 });
 
 it('scans one level deep, like Statamic', function () {
