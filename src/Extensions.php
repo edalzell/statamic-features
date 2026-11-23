@@ -37,20 +37,6 @@ class Extensions extends Extension
             : Statamic::booted(fn () => $this->bootMiddlewareGroups($feature));
     }
 
-    public function bootFeature(Feature $feature): void
-    {
-        if ($this->alreadyBooted($feature)) {
-            return;
-        }
-
-        $this
-            ->bootBlueprints($feature)
-            ->bootExtensions($feature)
-            ->bootFieldsets($feature)
-            ->bootAssets($feature)
-            ->bootUpdateScripts($feature);
-    }
-
     public function routeGroups(): array
     {
         return [
@@ -115,6 +101,20 @@ class Extensions extends Extension
         return $this;
     }
 
+    private function bootFeature(Feature $feature): void
+    {
+        if ($this->alreadyBooted($feature)) {
+            return;
+        }
+
+        $this
+            ->bootBlueprints($feature)
+            ->bootExtensions($feature)
+            ->bootFieldsets($feature)
+            ->bootAssets($feature)
+            ->bootUpdateScripts($feature);
+    }
+
     private function bootFieldsets(Feature $feature): static
     {
         if (File::isDirectory($path = $feature->pathTo('resources/fieldsets'))) {
@@ -161,15 +161,11 @@ class Extensions extends Extension
 
     private function bootUpdateScripts(Feature $feature): static
     {
-        if (! $feature->hasUpdateScripts()) {
+        if (($scripts = $feature->updateScripts())->isEmpty() || is_null($addon = $feature->addon())) {
             return $this;
         }
 
-        if (is_null($addon = $feature->addon())) {
-            return $this;
-        }
-
-        $feature->updateScripts()->each(fn (string $script) => $script::register($addon->package()));
+        $scripts->each(fn (string $script) => $script::register($addon->package()));
 
         return $this;
     }

@@ -63,25 +63,11 @@ final class Feature
     }
 
     /**
-     * @param  class-string|null  $type
-     * @return Collection<int, class-string>
-     */
-    public function classesIn(string $folder, ?string $type = null): Collection
-    {
-        return $this->laravelFeature->classes($folder, $type, depth: 0);
-    }
-
-    /**
      * @return Collection<int, class-string>
      */
     public function extensions(): Collection
     {
         return collect(self::EXTENSIONS)->flatMap(fn (string $type, string $folder) => $this->classesIn($folder, $type));
-    }
-
-    public function hasUpdateScripts(): bool
-    {
-        return File::isDirectory($this->pathTo('src/UpdateScripts'));
     }
 
     /**
@@ -90,11 +76,6 @@ final class Feature
     public function middlewareGroups(string $option): array
     {
         return $this->option($option, []);
-    }
-
-    public function option(string $key, mixed $default = null): mixed
-    {
-        return $this->laravelFeature->option($key, $default);
     }
 
     public function pathTo(string $relative = ''): string
@@ -174,6 +155,15 @@ final class Feature
     }
 
     /**
+     * @param  class-string|null  $type
+     * @return Collection<int, class-string>
+     */
+    private function classesIn(string $folder, ?string $type = null): Collection
+    {
+        return $this->laravelFeature->classes($folder, $type, depth: 0);
+    }
+
+    /**
      * @return Collection<int, string>
      */
     private function cpDirectories(): Collection
@@ -189,5 +179,10 @@ final class Feature
     {
         return Addons::all()
             ->first(fn (Addon $addon) => str_starts_with($this->laravelFeature->rootNamespace(), $addon->namespace().'\\'));
+    }
+
+    private function option(string $key, mixed $default = null): mixed
+    {
+        return $this->laravelFeature->option($key, $default);
     }
 }
