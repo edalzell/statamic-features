@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.2.0 - 2026-11-23
+
+### 🚀 New
+
+- Allow a feature's query scopes on repositories [@edalzell](https://github.com/edalzell) (#30)
+
+### 🧰 Maintenance
+
+- Wrap Features in a Feature decorator [@edalzell](https://github.com/edalzell) (#31)
+- Require laravel-features 2.1, which handles subscribers [@edalzell](https://github.com/edalzell) (#32)
+- Label pull requests with the shared workflow [@marcorieser](https://github.com/marcorieser) (#29)
+- Use Statamic::hasBooted() [@marcorieser](https://github.com/marcorieser) (#28)
+
 ## v2.1.1 - 2026-11-10
 
 ### 🐛 Fixed
